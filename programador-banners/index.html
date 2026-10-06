@@ -1,0 +1,178 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Programador de banners RUUTS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Passion+One:wght@400;700&family=Fustat:wght@400;500;600;700;800&display=swap">
+<style>
+/* Layout: una columna estrecha, dos tarjetas (Mostrar desde / Ocultar desde) y un resumen en lenguaje claro. Look único de marca, solo claro. */
+:root{
+  --ink:#152018; --lime:#cdee5a; --lime-soft:#ecfca1; --pink:#f5cbf7; --red:#e72a26;
+  --paper:#f7f8f1; --card:#ffffff; --muted:#5f6f60; --line:#152018;
+  --display:'Passion One','Arial Black',Impact,sans-serif;
+  --body:'Fustat','Helvetica Neue',Arial,sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5}
+.wrap{max-width:720px;margin:0 auto;padding-inline:16px;padding-block:28px 48px;display:grid;gap:22px}
+header{display:grid;gap:8px}
+.now{justify-self:start;font-weight:700;font-size:13px;letter-spacing:.06em;text-transform:uppercase;background:var(--ink);color:var(--lime);border-radius:999px;padding:6px 14px;font-variant-numeric:tabular-nums}
+h1{font-family:var(--display);font-weight:700;text-transform:uppercase;font-size:clamp(34px,7vw,52px);line-height:.95;margin:6px 0 0;text-wrap:balance}
+h1 span{background:linear-gradient(transparent 58%,var(--lime) 58%)}
+.lead{margin:0;color:var(--muted);max-width:60ch}
+.card{background:var(--card);border:2px solid var(--line);border-radius:18px;box-shadow:4px 5px 0 0 var(--line);padding:18px;display:grid;gap:14px}
+.card h2{font-family:var(--display);font-weight:700;text-transform:uppercase;font-size:26px;line-height:1;margin:0;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.card h2 small{font-family:var(--body);font-size:13px;font-weight:600;text-transform:none;color:var(--muted)}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:end}
+.field{display:grid;gap:4px;flex:1 1 150px;min-width:0}
+label{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+input[type=date],input[type=time]{font:600 17px var(--body);color:var(--ink);background:var(--paper);border:2px solid var(--line);border-radius:12px;padding:10px 12px;width:100%;font-variant-numeric:tabular-nums}
+input:focus-visible,button:focus-visible{outline:3px solid var(--pink);outline-offset:2px}
+.toggle{display:flex;align-items:center;gap:8px;font-weight:600;font-size:14px;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--ink)}
+.toggle input{width:20px;height:20px;accent-color:var(--ink)}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{font:700 13px var(--body);background:var(--card);color:var(--ink);border:1.6px solid var(--line);border-radius:999px;padding:6px 12px;cursor:pointer}
+.chip:hover{background:var(--lime-soft)}
+.out{display:flex;gap:10px;align-items:stretch;flex-wrap:wrap}
+.code{flex:1 1 220px;min-width:0;font:700 20px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:var(--lime-soft);border:2px dashed var(--line);border-radius:12px;padding:10px 14px;display:flex;align-items:center;user-select:all;overflow-x:auto;white-space:nowrap}
+.code.empty{background:var(--paper);color:var(--muted);font:600 15px var(--body)}
+.copy{font:700 17px var(--display);text-transform:uppercase;letter-spacing:.03em;background:var(--lime);color:var(--ink);border:2px solid var(--line);border-radius:12px;box-shadow:3px 4px 0 0 var(--line);padding:10px 20px;cursor:pointer;transition:transform .08s,box-shadow .08s}
+.copy:hover{transform:translate(1px,1px);box-shadow:2px 3px 0 0 var(--line)}
+.copy:active{transform:translate(3px,4px);box-shadow:0 0 0 0 var(--line)}
+.copy[disabled]{opacity:.45;cursor:not-allowed;transform:none;box-shadow:3px 4px 0 0 var(--line)}
+.copy.done{background:var(--ink);color:var(--lime)}
+.hint{margin:0;font-size:14px;color:var(--muted)}
+.summary{background:var(--ink);color:#fff;border-radius:18px;padding:18px;display:grid;gap:10px}
+.summary h2{font-family:var(--display);text-transform:uppercase;font-size:24px;margin:0;color:var(--lime)}
+.summary p{margin:0}
+.status{justify-self:start;font-weight:800;font-size:13px;letter-spacing:.05em;text-transform:uppercase;border-radius:999px;padding:5px 12px}
+.status.live{background:var(--lime);color:var(--ink)}
+.status.wait{background:var(--pink);color:var(--ink)}
+.status.over,.status.bad{background:var(--red);color:#fff}
+.steps{margin:0;padding-left:20px;display:grid;gap:6px;color:var(--ink)}
+.steps b{font-weight:800}
+footer{font-size:13px;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){.copy{transition:none}}
+</style>
+</head><body>
+
+<div class="wrap">
+  <header>
+    <div class="now" id="now">Hora Colombia: --</div>
+    <h1>Programa tu <span>banner</span></h1>
+    <p class="lead">Elige el día y la hora en hora de Colombia, copia el texto y pégalo en el slide del banner del home. No hay que restar ni sumar horas.</p>
+  </header>
+
+  <section class="card" aria-labelledby="t-start">
+    <h2 id="t-start">Mostrar desde <small>campo "Mostrar desde" del slide</small></h2>
+    <label class="toggle"><input type="checkbox" id="start-on" checked> Que empiece en una fecha (si no, se ve desde ya)</label>
+    <div class="row" id="start-fields">
+      <div class="field"><label for="start-date">Día</label><input type="date" id="start-date"></div>
+      <div class="field"><label for="start-time">Hora (24 h)</label><input type="time" id="start-time" step="60"></div>
+    </div>
+    <div class="chips" id="start-chips">
+      <button class="chip" type="button" data-set="start" data-q="now">Ahora</button>
+      <button class="chip" type="button" data-set="start" data-q="tomorrow">Mañana 00:00</button>
+      <button class="chip" type="button" data-set="start" data-q="friday">Próximo viernes 00:00</button>
+    </div>
+    <div class="out"><div class="code" id="start-out"></div><button class="copy" type="button" id="start-copy">Copiar</button></div>
+  </section>
+
+  <section class="card" aria-labelledby="t-end">
+    <h2 id="t-end">Ocultar desde <small>campo "Ocultar desde" del slide</small></h2>
+    <label class="toggle"><input type="checkbox" id="end-on" checked> Que se apague en una fecha (si no, queda sin fin)</label>
+    <div class="row" id="end-fields">
+      <div class="field"><label for="end-date">Día</label><input type="date" id="end-date"></div>
+      <div class="field"><label for="end-time">Hora (24 h)</label><input type="time" id="end-time" step="60"></div>
+    </div>
+    <div class="chips">
+      <button class="chip" type="button" data-set="end" data-q="d1">+1 día</button>
+      <button class="chip" type="button" data-set="end" data-q="d3">+3 días</button>
+      <button class="chip" type="button" data-set="end" data-q="d7">+7 días</button>
+      <button class="chip" type="button" data-set="end" data-q="eom">Fin de mes 23:59</button>
+    </div>
+    <div class="out"><div class="code" id="end-out"></div><button class="copy" type="button" id="end-copy">Copiar</button></div>
+  </section>
+
+  <section class="summary" aria-live="polite">
+    <h2>Así va a quedar</h2>
+    <span class="status" id="status"></span>
+    <p id="sum"></p>
+    <ol class="steps">
+      <li>En Shopify abre <b>Personalizar</b> y entra al slide en <b>Home · Banner</b>.</li>
+      <li>En <b>Programación (hora Colombia)</b> pega cada texto en su campo.</li>
+      <li>Guarda. En el editor el slide muestra una etiqueta con su estado.</li>
+    </ol>
+  </section>
+
+  <footer>Formato que entiende el banner: AAAA-MM-DD HH:MM, hora de Colombia (UTC-5, sin horario de verano). El cambio se ve al cargar la página.</footer>
+</div>
+
+<script>
+(function(){
+  var TZ='America/Bogota', OFF=5;
+  function $(id){return document.getElementById(id);}
+  function pad(n){return String(n).padStart(2,'0');}
+  /* "ahora" en Colombia como partes de fecha */
+  function coNow(){ var d=new Date(Date.now()-OFF*3600e3); return {y:d.getUTCFullYear(),m:d.getUTCMonth()+1,d:d.getUTCDate(),h:d.getUTCHours(),mi:d.getUTCMinutes()}; }
+  function partsToUTC(p){ return Date.UTC(p.y,p.m-1,p.d,p.h+OFF,p.mi); }
+  function utcToParts(ms){ var d=new Date(ms-OFF*3600e3); return {y:d.getUTCFullYear(),m:d.getUTCMonth()+1,d:d.getUTCDate(),h:d.getUTCHours(),mi:d.getUTCMinutes()}; }
+  function fmtCode(p){ return p.y+'-'+pad(p.m)+'-'+pad(p.d)+' '+pad(p.h)+':'+pad(p.mi); }
+  var longFmt=new Intl.DateTimeFormat('es-CO',{timeZone:TZ,weekday:'long',day:'numeric',month:'long',year:'numeric',hour:'numeric',minute:'2-digit',hour12:true});
+  var nowFmt=new Intl.DateTimeFormat('es-CO',{timeZone:TZ,weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',hour12:false});
+  function read(which){
+    if(!$(which+'-on').checked) return null;
+    var dv=$(which+'-date').value, tv=$(which+'-time').value||'00:00';
+    if(!dv) return undefined;
+    var a=dv.split('-'), b=tv.split(':');
+    return {y:+a[0],m:+a[1],d:+a[2],h:+b[0],mi:+b[1]};
+  }
+  function write(which,p){ $(which+'-on').checked=true; $(which+'-date').value=p.y+'-'+pad(p.m)+'-'+pad(p.d); $(which+'-time').value=pad(p.h)+':'+pad(p.mi); update(); }
+  function dur(ms){ var mins=Math.round(ms/60000), d=Math.floor(mins/1440), h=Math.floor((mins%1440)/60), m=mins%60, out=[];
+    if(d) out.push(d+(d===1?' día':' días')); if(h) out.push(h+(h===1?' hora':' horas')); if(m&&!d) out.push(m+' min'); return out.join(' y ')||'menos de un minuto'; }
+  function setOut(which,p){
+    var el=$(which+'-out'), btn=$(which+'-copy');
+    if(p===null){ el.textContent='Dejar vacío'; el.className='code empty'; btn.disabled=true; }
+    else if(p===undefined){ el.textContent='Elige un día'; el.className='code empty'; btn.disabled=true; }
+    else { el.textContent=fmtCode(p); el.className='code'; btn.disabled=false; }
+    $(which+'-fields').style.opacity=$(which+'-on').checked?1:.4;
+  }
+  function update(){
+    var s=read('start'), e=read('end'); setOut('start',s); setOut('end',e);
+    var now=Date.now(), st=s?partsToUTC(s):null, en=e?partsToUTC(e):null, st_el=$('status'), txt;
+    if(s===undefined||e===undefined){ st_el.className='status wait'; st_el.textContent='Falta un día'; $('sum').textContent='Elige el día en las fechas que activaste.'; return; }
+    if(st!==null&&en!==null&&en<=st){ st_el.className='status bad'; st_el.textContent='Revisa las fechas'; $('sum').textContent='La fecha de ocultar es igual o anterior a la de mostrar, así que el slide nunca se vería.'; return; }
+    var from = st===null ? 'ya mismo' : 'el '+longFmt.format(new Date(st));
+    var to = en===null ? 'y se queda sin fecha de fin.' : 'y se oculta el '+longFmt.format(new Date(en))+'.';
+    txt='El slide se ve desde '+from+' '+to;
+    if(st!==null&&en!==null) txt+=' En total queda arriba '+dur(en-st)+'.';
+    if(en!==null&&now>=en){ st_el.className='status over'; st_el.textContent='Ya terminó'; }
+    else if(st!==null&&now<st){ st_el.className='status wait'; st_el.textContent='Empieza en '+dur(st-now); }
+    else { st_el.className='status live'; st_el.textContent='Visible ahora'; }
+    $('sum').textContent=txt.replace(/\.\./g,'.');
+  }
+  function quick(which,q){
+    var n=coNow(), base;
+    if(q==='now'){ write(which,n); return; }
+    if(q==='tomorrow'){ base=partsToUTC({y:n.y,m:n.m,d:n.d,h:0,mi:0})+864e5; write(which,utcToParts(base)); return; }
+    if(q==='friday'){ var dow=new Date(Date.UTC(n.y,n.m-1,n.d)).getUTCDay(), add=((5-dow+7)%7)||7; base=partsToUTC({y:n.y,m:n.m,d:n.d,h:0,mi:0})+add*864e5; write(which,utcToParts(base)); return; }
+    var s=read('start'), from=s?partsToUTC(s):partsToUTC(n);
+    if(q==='eom'){ var p=utcToParts(from); var last=new Date(Date.UTC(p.y,p.m,0)).getUTCDate(); write(which,{y:p.y,m:p.m,d:last,h:23,mi:59}); return; }
+    var days=+q.slice(1); write(which,utcToParts(from+days*864e5));
+  }
+  document.querySelectorAll('[data-set]').forEach(function(b){ b.addEventListener('click',function(){ quick(b.getAttribute('data-set'),b.getAttribute('data-q')); }); });
+  ['start','end'].forEach(function(w){
+    ['-on','-date','-time'].forEach(function(k){ $(w+k).addEventListener('input',update); $(w+k).addEventListener('change',update); });
+    $(w+'-copy').addEventListener('click',function(){
+      var btn=this, val=$(w+'-out').textContent;
+      function ok(){ btn.textContent='Copiado'; btn.classList.add('done'); setTimeout(function(){ btn.textContent='Copiar'; btn.classList.remove('done'); },1600); }
+      function fallback(){ var r=document.createRange(); r.selectNodeContents($(w+'-out')); var sel=getSelection(); sel.removeAllRanges(); sel.addRange(r); try{ if(document.execCommand('copy')){ ok(); return; } }catch(e){} btn.textContent='Selecciónalo y copia'; }
+      if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(val).then(ok,fallback); } else fallback();
+    });
+  });
+  function tick(){ $('now').textContent='Hora Colombia: '+nowFmt.format(new Date()); }
+  tick(); setInterval(tick,30000); setInterval(update,60000);
+  /* Ejemplo inicial: mañana 00:00 hasta 7 días después a las 23:59 */
+  (function(){ var n=coNow(); var t=utcToParts(partsToUTC({y:n.y,m:n.m,d:n.d,h:0,mi:0})+864e5); write('start',t); var e=utcToParts(partsToUTC(t)+6*864e5); e.h=23; e.mi=59; write('end',e); })();
+})();
+</script>
+</body></html>
