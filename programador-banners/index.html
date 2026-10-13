@@ -97,6 +97,10 @@ footer{font-size:13px;color:var(--muted)}
     <div class="chips" id="start-chips">
       <button class="chip" type="button" data-set="start" data-q="now">Ahora</button>
       <button class="chip" type="button" data-set="start" data-q="tomorrow8">Mañana 8:00</button>
+      <button class="chip" type="button" data-set="start" data-q="eve18" id="chip-eve" title="Hoy a las 6 p. m.; si ya pasó, mañana">Hoy 18:00</button>
+      <button class="chip" type="button" data-set="start" data-q="mon8" title="Próximo lunes a las 8 a. m.">Lunes 8:00</button>
+      <button class="chip" type="button" data-set="start" data-q="fri18" title="Próximo viernes a las 6 p. m., para el fin de semana">Viernes 18:00</button>
+      <button class="chip" type="button" data-set="start" data-q="pay8" title="Próximo día de pago: el 15 o el último día del mes, a las 8 a. m.">Quincena 8:00</button>
     </div>
     <div class="out"><div class="code" id="start-out"></div><button class="copy" type="button" id="start-copy">Copiar</button></div>
   </section>
@@ -110,9 +114,11 @@ footer{font-size:13px;color:var(--muted)}
       <div class="field"><label for="end-time">Hora (24 h)</label><input type="time" id="end-time" step="60"></div>
     </div>
     <div class="chips">
+      <button class="chip" type="button" data-set="end" data-q="eod" title="El mismo día de la salida a las 11:59 p. m.">Mismo día 23:59</button>
       <button class="chip" type="button" data-set="end" data-q="d1">+1 día</button>
       <button class="chip" type="button" data-set="end" data-q="d3">+3 días</button>
       <button class="chip" type="button" data-set="end" data-q="d7">+7 días</button>
+      <button class="chip" type="button" data-set="end" data-q="sun" title="El domingo de esa semana a las 11:59 p. m.">Domingo 23:59</button>
       <button class="chip" type="button" data-set="end" data-q="eom">Fin de mes 23:59</button>
     </div>
     <div class="out"><div class="code" id="end-out"></div><button class="copy" type="button" id="end-copy">Copiar</button></div>
@@ -177,11 +183,26 @@ footer{font-size:13px;color:var(--muted)}
     else { st_el.className='status live'; st_el.textContent='Visible ahora'; }
     $('sum').textContent=txt.replace(/\.\./g,'.');
   }
+  /* Próxima vez (después de ahora) que sea ese día de la semana (null = cualquiera) a la hora h en Colombia */
+  function nextAt(dow,h){ var n=coNow(), now=Date.now();
+    for(var i=0;i<8;i++){ var t=partsToUTC({y:n.y,m:n.m,d:n.d,h:h,mi:0})+i*864e5, p=utcToParts(t);
+      if(t>now && (dow===null || new Date(Date.UTC(p.y,p.m-1,p.d)).getUTCDay()===dow)) return t; } }
+  /* Próximo día de pago (15 o último del mes) a las 8:00 */
+  function nextPayday(){ var n=coNow(), now=Date.now();
+    for(var k=0;k<3;k++){ var y=n.y, m=n.m+k; if(m>12){ m-=12; y++; } var last=new Date(Date.UTC(y,m,0)).getUTCDate();
+      var a=partsToUTC({y:y,m:m,d:15,h:8,mi:0}); if(a>now) return a;
+      var b=partsToUTC({y:y,m:m,d:last,h:8,mi:0}); if(b>now) return b; } }
   function quick(which,q){
     var n=coNow(), base;
     if(q==='now'){ write(which,n); return; }
     if(q==='tomorrow8'){ base=partsToUTC({y:n.y,m:n.m,d:n.d,h:8,mi:0})+864e5; write(which,utcToParts(base)); return; }
-    var s=read('start'), from=s?partsToUTC(s):partsToUTC(n);
+    if(q==='eve18'){ write(which,utcToParts(nextAt(null,18))); return; }
+    if(q==='mon8'){ write(which,utcToParts(nextAt(1,8))); return; }
+    if(q==='fri18'){ write(which,utcToParts(nextAt(5,18))); return; }
+    if(q==='pay8'){ write(which,utcToParts(nextPayday())); return; }
+    var s=read('start'), from=s?partsToUTC(s):partsToUTC(n), fp=utcToParts(from);
+    if(q==='eod'){ write(which,{y:fp.y,m:fp.m,d:fp.d,h:23,mi:59}); return; }
+    if(q==='sun'){ var add=(7-new Date(Date.UTC(fp.y,fp.m-1,fp.d)).getUTCDay())%7, t=utcToParts(partsToUTC({y:fp.y,m:fp.m,d:fp.d,h:12,mi:0})+add*864e5); write(which,{y:t.y,m:t.m,d:t.d,h:23,mi:59}); return; }
     if(q==='eom'){ var p=utcToParts(from); var last=new Date(Date.UTC(p.y,p.m,0)).getUTCDate(); write(which,{y:p.y,m:p.m,d:last,h:23,mi:59}); return; }
     var days=+q.slice(1); write(which,utcToParts(from+days*864e5));
   }
@@ -200,7 +221,7 @@ footer{font-size:13px;color:var(--muted)}
     document.querySelectorAll('[data-mode]').forEach(function(x){ x.setAttribute('aria-pressed',String(x===b)); });
     update();
   }); });
-  function tick(){ $('now').textContent='Hora Colombia: '+nowFmt.format(new Date()); }
+  function tick(){ $('now').textContent='Hora Colombia: '+nowFmt.format(new Date()); $('chip-eve').textContent=(coNow().h>=18?'Mañana':'Hoy')+' 18:00'; }
   tick(); setInterval(tick,30000); setInterval(update,60000);
   /* Ejemplo inicial: mañana 8:00 hasta 7 días después a las 23:59 */
   (function(){ var n=coNow(); var t=utcToParts(partsToUTC({y:n.y,m:n.m,d:n.d,h:8,mi:0})+864e5); write('start',t); var e=utcToParts(partsToUTC(t)+6*864e5); e.h=23; e.mi=59; write('end',e); })();
