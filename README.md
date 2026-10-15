@@ -3,3 +3,4 @@
 Utilidades pequeñas para el equipo de la tienda, publicadas con GitHub Pages.
 
 - `programador-banners/`: genera las fechas en hora de Colombia (AAAA-MM-DD HH:MM) para los campos "Mostrar desde" y "Ocultar desde" de los slides de la sección Home · Banner.
+- `variantes-producto/`: a partir del export de productos de Shopify y un xlsx con las combinaciones, genera el CSV de un solo producto con todas sus variantes, listo para importar sobrescribiendo por handle.
