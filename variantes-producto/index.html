@@ -538,17 +538,28 @@ footer{font-size:13px;color:var(--muted)}
           var cc=el('span','rcp-c'); cc.style.background=FL[f].c; b.appendChild(cc); b.appendChild(el('span','rcp-nm',FL[f].lbl));
           b.addEventListener('click',function(){ picks[j]=f; renderPreview(); }); fl.appendChild(b); });
         d.appendChild(fl); wrap.appendChild(d); })(j); }
+      /* Las demás opciones (ej. "Color del shaker") entran como un paso más, con círculos, igual que en el tema */
+      var extra=[];
+      for(var o=1;o<nOpt;o++){ (function(o){
+        var nm=names[o]||('Opción '+(o+1)), isColor=/color|colour|tono/i.test(nm);
+        var d=el('div','rcp-jar rcp-extra'), h=el('div','rcp-jh'); h.appendChild(el('span','rcp-jn',String(jars+o))); h.appendChild(document.createTextNode(nm));
+        h.appendChild(el('span','rcp-pick',sel[o]||'elige')); d.appendChild(h);
+        var fl=el('div','rcp-fl');
+        valuesBy[o].forEach(function(val){ var b=el('button','rcp-b'); b.type='button'; b.setAttribute('aria-pressed',String(sel[o]===val));
+          var cc=el('span','rcp-c'); cc.style.background=isColor?colorInfo(val):saborInfo(val).c; b.appendChild(cc); b.appendChild(el('span','rcp-nm',val));
+          b.addEventListener('click',function(){ sel[o]=val; renderPreview(); }); fl.appendChild(b); });
+        d.appendChild(fl); wrap.appendChild(d); if(sel[o]) extra.push(nm+': '+sel[o]); })(o); }
       var sum=el('div','rcp-sum');
       if(!picks.every(Boolean)) sum.textContent='';
       else if(!sel[0]){ sum.textContent='Esa combinación no está disponible por ahora.'; sum.className='rcp-sum rcp-warn'; }
-      else sum.textContent='Tu combo: '+flavs.filter(function(f){return c[f];}).map(function(f){return c[f]+' × '+FL[f].lbl;}).join('  +  ');
+      else sum.textContent='Tu combo: '+flavs.filter(function(f){return c[f];}).map(function(f){return c[f]+' × '+FL[f].lbl;}).join('  +  ')+(extra.length?'  ·  '+extra.join('  ·  '):'');
       wrap.appendChild(sum); box.appendChild(wrap);
     } else {
       if(sel[0]==null||titles.indexOf(sel[0])<0) sel[0]=titles[0];
       box.appendChild(optionBlock(0,titles,true));
+      /* Las demás opciones, como el tema: círculos si es un color, botones si no */
+      for(var o=1;o<nOpt;o++){ box.appendChild(optionBlock(o,valuesBy[o],false)); }
     }
-    /* Las demás opciones, como el tema: círculos si es un color, botones si no */
-    for(var o=1;o<nOpt;o++){ box.appendChild(optionBlock(o,valuesBy[o],false)); }
 
     var hit=-1; variants.forEach(function(v,i){ if(hit<0&&v.vals.every(function(x,k){return x===sel[k];})) hit=i; });
     var cta=$('pdp-cta'); cta.textContent=hit>=0?'Añadir al carrito':'No disponible'; cta.className='pdp-cta'+(hit>=0?'':' na');
