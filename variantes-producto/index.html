@@ -1,0 +1,318 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Variantes de producto RUUTS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Passion+One:wght@400;700&family=Fustat:wght@400;500;600;700;800&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+/* Layout: paso 1 (export de productos) y paso 2 (xlsx de combinaciones) lado a lado en PC, luego ajustes, vista previa y descarga. Mismo look del programador de banners, solo claro. Todo pasa en el navegador: no se envía nada a Shopify. */
+:root{
+  --ink:#152018; --lime:#cdee5a; --lime-soft:#ecfca1; --pink:#f5cbf7; --red:#e72a26;
+  --paper:#f7f8f1; --card:#ffffff; --muted:#5f6f60; --line:#152018;
+  --display:'Passion One','Arial Black',Impact,sans-serif;
+  --body:'Fustat','Helvetica Neue',Arial,sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5}
+.wrap{max-width:1080px;margin:0 auto;padding-inline:16px;padding-block:24px 40px;display:grid;gap:18px}
+.pair{display:grid;gap:18px;grid-template-columns:1fr}
+@media (min-width:750px){.wrap{padding-inline:22px}.pair{grid-template-columns:1fr 1fr;align-items:stretch}}
+header{display:grid;gap:8px}
+.back{justify-self:start;font-weight:700;font-size:13px;letter-spacing:.06em;text-transform:uppercase;background:var(--ink);color:var(--lime);border-radius:999px;padding:6px 14px;text-decoration:none}
+h1{font-family:var(--display);font-weight:700;text-transform:uppercase;font-size:clamp(34px,7vw,52px);line-height:.95;margin:6px 0 0;text-wrap:balance}
+h1 span{background:linear-gradient(transparent 58%,var(--lime) 58%)}
+.lead{margin:0;color:var(--muted);max-width:62ch}
+.eyebrow{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;background:var(--lime);border:1.6px solid var(--line);border-radius:999px;padding:2px 9px;justify-self:start}
+.card{background:var(--card);border:2px solid var(--line);border-radius:18px;box-shadow:4px 5px 0 0 var(--line);padding:18px;display:grid;gap:12px;align-content:start;min-width:0}
+.card.off{opacity:.45;pointer-events:none}
+.card h2{font-family:var(--display);font-weight:700;text-transform:uppercase;font-size:26px;line-height:1;margin:0}
+.field{display:grid;gap:4px;min-width:0}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:end}
+.row .field{flex:1 1 180px}
+label{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+input[type=text],input[type=number],select{font:600 16px var(--body);color:var(--ink);background:var(--paper);border:2px solid var(--line);border-radius:12px;padding:10px 12px;width:100%;min-width:0}
+select:focus-visible,input:focus-visible,button:focus-visible,.drop:focus-within{outline:3px solid var(--pink);outline-offset:2px}
+.drop{position:relative;display:grid;gap:2px;justify-items:center;text-align:center;background:var(--paper);border:2px dashed var(--line);border-radius:14px;padding:18px 12px;cursor:pointer}
+.drop:hover,.drop.over{background:var(--lime-soft)}
+.drop b{font-family:var(--display);text-transform:uppercase;font-size:20px;font-weight:700}
+.drop small{color:var(--muted);font-weight:600}
+.drop input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%}
+.drop.ok{background:var(--lime-soft);border-style:solid}
+.hint{margin:0;font-size:14px;color:var(--muted)}
+.hint.bad{color:var(--red);font-weight:700}
+.cols{display:flex;gap:8px;flex-wrap:wrap}
+.tag{font:700 13px var(--body);background:var(--card);border:1.6px solid var(--line);border-radius:999px;padding:4px 11px}
+.tag.flavor{background:var(--lime)}
+.tag.opt{background:var(--pink)}
+.tag.skip{background:var(--paper);color:var(--muted);border-style:dashed}
+.btn{font:700 17px var(--display);text-transform:uppercase;letter-spacing:.03em;background:var(--lime);color:var(--ink);border:2px solid var(--line);border-radius:12px;box-shadow:3px 4px 0 0 var(--line);padding:12px 22px;cursor:pointer;transition:transform .08s,box-shadow .08s;justify-self:start}
+.btn:hover{transform:translate(1px,1px);box-shadow:2px 3px 0 0 var(--line)}
+.btn:active{transform:translate(3px,4px);box-shadow:0 0 0 0 var(--line)}
+.btn[disabled]{opacity:.45;cursor:not-allowed;transform:none;box-shadow:3px 4px 0 0 var(--line)}
+.summary{background:var(--ink);color:#fff;border-radius:18px;padding:18px;display:grid;gap:12px;min-width:0}
+.summary h2{font-family:var(--display);text-transform:uppercase;font-size:24px;margin:0;color:var(--lime)}
+.summary p{margin:0}
+.status{justify-self:start;font-weight:800;font-size:13px;letter-spacing:.05em;text-transform:uppercase;border-radius:999px;padding:5px 12px}
+.status.live{background:var(--lime);color:var(--ink)}
+.status.wait{background:var(--pink);color:var(--ink)}
+.status.bad{background:var(--red);color:#fff}
+.msgs{margin:0;padding-left:20px;display:grid;gap:4px}
+.msgs:empty{display:none}
+.table{overflow:auto;max-height:420px;border-radius:12px;background:#fff;color:var(--ink);border:2px solid var(--line)}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid #e3e6da;white-space:nowrap}
+th{position:sticky;top:0;background:var(--lime-soft);font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}
+td.num{color:var(--muted);font-variant-numeric:tabular-nums}
+td.sku{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px}
+.steps{margin:0;padding-left:20px;display:grid;gap:6px;color:#fff}
+.steps b{color:var(--lime);font-weight:800}
+footer{font-size:13px;color:var(--muted)}
+@media (max-width:749px){.card{padding:14px;gap:10px}.card h2{font-size:22px}.btn{padding:10px 16px;font-size:15px}}
+@media (prefers-reduced-motion:reduce){.btn{transition:none}}
+</style>
+</head><body>
+
+<div class="wrap">
+  <header>
+    <a class="back" href="../">← Herramientas</a>
+    <h1>Variantes al <span>producto</span></h1>
+    <p class="lead">Sube el export de productos de Shopify y el xlsx con las combinaciones. Elige el producto y descarga un CSV listo para importar con solo ese producto y todas sus variantes. Nada se envía a Shopify desde aquí.</p>
+  </header>
+
+  <div class="pair">
+    <section class="card" aria-labelledby="t-exp">
+      <span class="eyebrow">Paso 1</span>
+      <h2 id="t-exp">Export de productos</h2>
+      <label class="drop" id="exp-drop"><b>Subir CSV</b><small id="exp-name">En Shopify: Productos › Exportar › Todos los productos</small><input type="file" id="exp-file" accept=".csv,text/csv"></label>
+      <div class="field"><label for="product">Producto</label><select id="product" disabled><option>Primero sube el export</option></select></div>
+      <p class="hint" id="exp-info"></p>
+    </section>
+
+    <section class="card" aria-labelledby="t-xl">
+      <span class="eyebrow">Paso 2</span>
+      <h2 id="t-xl">Combinaciones</h2>
+      <label class="drop" id="xl-drop"><b>Subir xlsx</b><small id="xl-name">Una fila por combinación, columnas Tarro 1, Tarro 2…</small><input type="file" id="xl-file" accept=".xlsx,.xls,.csv"></label>
+      <div class="cols" id="cols"></div>
+      <p class="hint" id="xl-info">Las columnas que digan "Tarro" o "Sabor" se juntan en una sola opción (Shopify permite máximo 3 opciones). Las demás columnas que cambian son otra opción; las que siempre tienen el mismo valor se ignoran.</p>
+    </section>
+  </div>
+
+  <section class="card off" id="set-card" aria-labelledby="t-set">
+    <span class="eyebrow">Paso 3</span>
+    <h2 id="t-set">Ajustes</h2>
+    <div class="row" id="opt-names"></div>
+    <div class="row">
+      <div class="field"><label for="price">Precio</label><input type="number" id="price" min="0" step="any"></div>
+      <div class="field"><label for="compare">Precio antes (tachado)</label><input type="number" id="compare" min="0" step="any"></div>
+      <div class="field"><label for="sku">Inicio del SKU</label><input type="text" id="sku" placeholder="Ej. COMB3-GOGO"></div>
+    </div>
+    <p class="hint">Todas las variantes llevan este precio. El SKU se arma con el inicio, las iniciales de cada sabor con su cantidad y las 3 primeras letras de las otras opciones (ej. COMB3-GOGO-LM2-FP1-BEI). Déjalo vacío si no quieres SKU.</p>
+  </section>
+
+  <section class="summary" aria-live="polite">
+    <h2>Así va a quedar</h2>
+    <span class="status wait" id="status">Faltan archivos</span>
+    <p id="sum">Sube los dos archivos para ver las variantes.</p>
+    <ul class="msgs" id="msgs"></ul>
+    <div class="table" id="table" hidden></div>
+    <button class="btn" type="button" id="dl" disabled>Descargar CSV</button>
+    <ol class="steps">
+      <li>En Shopify ve a <b>Productos › Importar</b> y sube el CSV.</li>
+      <li>Marca <b>Sobrescribir productos con el mismo handle</b>.</li>
+      <li>Las variantes que tenía el producto se reemplazan por estas. Descripción, imágenes, etiquetas y estado quedan como están en el export.</li>
+    </ol>
+  </section>
+
+  <footer>Usa un export reciente: el CSV toma del export todo lo que no son variantes, así que si cambiaste el producto en Shopify después de exportar, vuelve a exportar. El inventario no se toca: las variantes nuevas quedan en 0.</footer>
+</div>
+
+<script>
+(function(){
+  function $(id){return document.getElementById(id);}
+  var exp=null, xl=null, out=null;
+
+  /* CSV con comillas y saltos de línea dentro de los campos */
+  function parseCSV(t){
+    if(t.charCodeAt(0)===0xFEFF) t=t.slice(1);
+    var rows=[], row=[], f='', q=false, i=0, c;
+    for(;i<t.length;i++){ c=t[i];
+      if(q){ if(c==='"'){ if(t[i+1]==='"'){ f+='"'; i++; } else q=false; } else f+=c; }
+      else if(c==='"') q=true;
+      else if(c===','){ row.push(f); f=''; }
+      else if(c==='\n'||c==='\r'){ if(c==='\r'&&t[i+1]==='\n') i++; row.push(f); rows.push(row); row=[]; f=''; }
+      else f+=c; }
+    if(f!==''||row.length){ row.push(f); rows.push(row); }
+    return rows.filter(function(r){ return r.some(function(v){return v!=='';}); });
+  }
+  function toCSV(rows){
+    return rows.map(function(r){ return r.map(function(v){ v=v==null?'':String(v); return /[",\r\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; }).join(','); }).join('\r\n')+'\r\n';
+  }
+  function txt(v){ return v==null?'':String(v).trim(); }
+  function initials(s){ return s.normalize('NFD').replace(/[̀-ͯ]/g,'').split(/[^A-Za-z0-9]+/).filter(Boolean).map(function(w){return w[0];}).join('').toUpperCase(); }
+  function short3(s){ return s.normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^A-Za-z0-9]/g,'').slice(0,3).toUpperCase(); }
+
+  function readFile(input,cb,binary){
+    var f=input.files[0]; if(!f) return;
+    var r=new FileReader(); r.onload=function(){ cb(f,r.result); };
+    binary?r.readAsArrayBuffer(f):r.readAsText(f,'utf-8');
+  }
+
+  /* Paso 1: export */
+  $('exp-file').addEventListener('change',function(){ readFile(this,function(f,t){
+    var rows=parseCSV(t), h=rows[0]||[];
+    if(h.indexOf('Handle')<0||h.indexOf('Option1 Name')<0){ $('exp-info').className='hint bad'; $('exp-info').textContent='Este archivo no parece un export de productos de Shopify (no tiene las columnas Handle y Option1 Name).'; return; }
+    var idx={}; h.forEach(function(k,i){ idx[k]=i; });
+    var products=[], byHandle={};
+    rows.slice(1).forEach(function(r){ var hd=r[idx.Handle]; if(!hd) return;
+      if(!byHandle[hd]){ byHandle[hd]={handle:hd,rows:[]}; products.push(byHandle[hd]); }
+      var p=byHandle[hd]; p.rows.push(r); if(!p.title&&r[idx.Title]) p.title=r[idx.Title]; });
+    exp={head:h,idx:idx,products:products};
+    var sel=$('product'); sel.innerHTML='<option value="">Elige el producto…</option>';
+    products.slice().sort(function(a,b){return (a.title||a.handle).localeCompare(b.title||b.handle,'es');}).forEach(function(p){
+      var o=document.createElement('option'); o.value=p.handle; o.textContent=p.title||p.handle; sel.appendChild(o); });
+    sel.disabled=false;
+    if(products.length===1) sel.value=products[0].handle;
+    $('exp-drop').classList.add('ok'); $('exp-name').textContent=f.name+' · '+(products.length===1?'1 producto':products.length+' productos');
+    $('exp-info').className='hint'; $('exp-info').textContent=products.length===1?'Un solo producto: ya quedó elegido.':'Elige a cuál producto van las variantes.';
+    pickDefaults(); build();
+  }); });
+  $('product').addEventListener('change',function(){ pickDefaults(); build(); });
+
+  function current(){ return exp&&exp.products.filter(function(p){return p.handle===$('product').value;})[0]; }
+  function pickDefaults(){
+    var p=current(); if(!p) return;
+    var r=p.rows[0], i=exp.idx;
+    $('price').value=r[i['Variant Price']]||''; $('compare').value=r[i['Variant Compare At Price']]||'';
+    var vars=p.rows.filter(function(x){return x[i['Option1 Value']];}).length;
+    $('exp-info').className='hint';
+    $('exp-info').textContent='Hoy tiene '+vars+(vars===1?' variante':' variantes')+' ('+(r[i['Option1 Value']]||'sin opciones')+'). Estado: '+(r[i.Status]||'—')+'.';
+  }
+
+  /* Paso 2: xlsx */
+  $('xl-file').addEventListener('change',function(){ readFile(this,function(f,buf){
+    var aoa;
+    try{ var wb=XLSX.read(buf,{type:'array'}); aoa=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:''}); }
+    catch(e){ xl=null; $('xl-info').className='hint bad'; $('xl-info').textContent='No pude leer el archivo. ¿Es un xlsx?'; build(); return; }
+    var hr=-1;
+    /* La fila de títulos: tiene varias celdas y alguna dice Tarro o Sabor (los títulos del documento, de una sola celda, no cuentan) */
+    for(var k=0;k<aoa.length;k++){ var filled=aoa[k].filter(function(v){return txt(v)!=='';});
+      if(filled.length>=2&&filled.some(function(v){return /tarro|sabor/i.test(txt(v));})){ hr=k; break; } }
+    if(hr<0){ xl=null; $('xl-info').className='hint bad'; $('xl-info').textContent='No encontré la fila de títulos: necesito columnas que digan "Tarro" o "Sabor".'; build(); return; }
+    var head=aoa[hr].map(txt), data=aoa.slice(hr+1).filter(function(r){ return r.some(function(v){return txt(v)!=='';}); });
+    var cols=head.map(function(name,c){
+      var vals=data.map(function(r){return txt(r[c]);}), uniq=vals.filter(function(v,i){return vals.indexOf(v)===i;});
+      var kind;
+      if(!name&&uniq.length<=1) kind='empty';
+      else if(/tarro|sabor/i.test(name)) kind='flavor';
+      else if(/^(n\.?\s*[º°o]?\.?|#|no\.?|item)$/i.test(name)||vals.every(function(v,i){return v===String(i+1);})) kind='skip';
+      else if(uniq.length>1) kind='opt';
+      else kind='const';
+      return {name:name,c:c,kind:kind,uniq:uniq};
+    }).filter(function(x){return x.kind!=='empty';});
+    xl={cols:cols,data:data};
+    var box=$('cols'); box.innerHTML='';
+    cols.forEach(function(x){ var s=document.createElement('span');
+      s.className='tag '+(x.kind==='flavor'?'flavor':x.kind==='opt'?'opt':'skip');
+      s.textContent=x.name+(x.kind==='flavor'?' · sabor':x.kind==='opt'?' · opción':x.kind==='const'?' · siempre '+(x.uniq[0]||'vacío'):' · se ignora');
+      box.appendChild(s); });
+    $('xl-drop').classList.add('ok'); $('xl-name').textContent=f.name+' · '+data.length+' filas';
+    $('xl-info').className='hint'; $('xl-info').textContent='Verde: se juntan como sabores. Rosado: opción aparte. Punteado: no se usa.';
+    var flav=cols.filter(function(x){return x.kind==='flavor';}).length, opts=cols.filter(function(x){return x.kind==='opt';});
+    var names=$('opt-names'); names.innerHTML='';
+    addName('Opción 1 (sabores)', flav>1?'Elige tus '+flav+' sabores':'Sabor');
+    opts.forEach(function(x,n){ addName('Opción '+(n+2)+' ('+x.name+')', x.name); });
+    build();
+  },true); });
+  function addName(lbl,val){ var d=document.createElement('div'); d.className='field';
+    var id='on'+$('opt-names').children.length;
+    d.innerHTML='<label for="'+id+'"></label><input type="text" id="'+id+'">';
+    d.querySelector('label').textContent=lbl; d.querySelector('input').value=val;
+    $('opt-names').appendChild(d); }
+  ['price','compare','sku'].forEach(function(id){ $(id).addEventListener('input',build); });
+  $('opt-names').addEventListener('input',build);
+
+  /* Arma las filas del CSV */
+  function build(){
+    var p=current(), msgs=[], st=$('status');
+    $('set-card').classList.toggle('off',!(p&&xl));
+    out=null; $('dl').disabled=true; $('table').hidden=true; $('msgs').innerHTML='';
+    if(!p||!xl){ st.className='status wait'; st.textContent='Faltan archivos'; $('sum').textContent=!exp?'Sube el export de productos.':!p?'Elige el producto.':'Sube el xlsx de combinaciones.'; return; }
+    var flav=xl.cols.filter(function(x){return x.kind==='flavor';}), opts=xl.cols.filter(function(x){return x.kind==='opt';});
+    var names=[].map.call($('opt-names').querySelectorAll('input'),function(i){return i.value.trim();});
+    var order=[]; xl.data.forEach(function(r){ flav.forEach(function(x){ var v=txt(r[x.c]); if(v&&order.indexOf(v)<0) order.push(v); }); });
+    var variants=[], seen={}, dup=0, empty=0;
+    xl.data.forEach(function(r){
+      var cnt={}; flav.forEach(function(x){ var v=txt(r[x.c]); if(v) cnt[v]=(cnt[v]||0)+1; });
+      var used=order.filter(function(f){return cnt[f];});
+      if(!used.length){ empty++; return; }
+      var v1=flav.length>1?used.map(function(f){return cnt[f]+' '+f;}).join(' - '):used[0];
+      var vals=[v1].concat(opts.map(function(x){return txt(r[x.c]);}));
+      var key=vals.join('\u0001'); if(seen[key]){ dup++; return; } seen[key]=1;
+      var pre=$('sku').value.trim();
+      var sku=pre?[pre].concat(used.map(function(f){return initials(f)+(flav.length>1?cnt[f]:'');})).concat(vals.slice(1).map(short3)).join('-'):'';
+      variants.push({vals:vals,sku:sku});
+    });
+    var nOpt=1+opts.length;
+    if(!flav.length) msgs.push(['bad','El xlsx no tiene columnas de sabor.']);
+    if(nOpt>3) msgs.push(['bad','Salen '+nOpt+' opciones y Shopify permite máximo 3. Quita columnas del xlsx o junta algunas.']);
+    if(variants.length>100) msgs.push(['bad','Salen '+variants.length+' variantes. Shopify permite 100 por producto en la mayoría de tiendas (2048 solo con el nuevo modelo de variantes). Divide el xlsx en dos productos.']);
+    if(dup) msgs.push(['warn',dup+(dup===1?' fila repetida se quitó':' filas repetidas se quitaron')+' (mismos sabores en otro orden cuentan igual).']);
+    if(empty) msgs.push(['warn',empty+(empty===1?' fila sin sabores se ignoró.':' filas sin sabores se ignoraron.')]);
+    if(names.some(function(n){return !n;})) msgs.push(['bad','Ponle nombre a todas las opciones.']);
+    var skus=variants.map(function(v){return v.sku;}).filter(Boolean);
+    if(skus.length!==skus.filter(function(s,i){return skus.indexOf(s)===i;}).length) msgs.push(['warn','Hay SKU repetidos: dos sabores tienen las mismas iniciales o dos valores empiezan igual. Revisa la tabla.']);
+    if(!$('price').value) msgs.push(['bad','Falta el precio.']);
+    msgs.forEach(function(m){ var li=document.createElement('li'); li.textContent=m[1]; $('msgs').appendChild(li); });
+    var bad=msgs.some(function(m){return m[0]==='bad';});
+
+    /* Tabla */
+    var tb='<table><thead><tr><th>#</th>'+names.map(function(n){return '<th></th>';}).join('')+'<th>SKU</th></tr></thead><tbody></tbody></table>';
+    var t=$('table'); t.innerHTML=tb; var ths=t.querySelectorAll('th');
+    names.forEach(function(n,i){ ths[i+1].textContent=n||('Opción '+(i+1)); });
+    var body=t.querySelector('tbody');
+    variants.forEach(function(v,i){ var tr=document.createElement('tr');
+      var td=document.createElement('td'); td.className='num'; td.textContent=i+1; tr.appendChild(td);
+      v.vals.forEach(function(x){ var d=document.createElement('td'); d.textContent=x; tr.appendChild(d); });
+      var s=document.createElement('td'); s.className='sku'; s.textContent=v.sku||'—'; tr.appendChild(s);
+      body.appendChild(tr); });
+    t.hidden=!variants.length;
+
+    var price=$('price').value, cmp=$('compare').value;
+    $('sum').textContent=variants.length+' variantes con '+nOpt+(nOpt===1?' opción':' opciones')+' para «'+(p.title||p.handle)+'», a '+fmtMoney(price)+(cmp?' (antes '+fmtMoney(cmp)+')':'')+'.';
+    if(bad){ st.className='status bad'; st.textContent='Revisa esto'; return; }
+    st.className='status live'; st.textContent='Listo para descargar';
+
+    /* CSV: fila del producto + una fila por variante + las filas de imágenes extra */
+    var H=exp.head, I=exp.idx, base=p.rows[0];
+    var isVar=function(k){ return /^Variant /.test(k)||/^Unit Price /.test(k)||k==='Cost per item'; };
+    var rows=[H.slice()];
+    variants.forEach(function(v,n){
+      var r=n===0?base.slice():H.map(function(k,c){ return isVar(k)?base[c]:''; });
+      if(n>0) r[I.Handle]=p.handle;
+      for(var o=1;o<=3;o++){
+        if(I['Option'+o+' Name']!=null) r[I['Option'+o+' Name']]=n===0&&names[o-1]?names[o-1]:'';
+        if(I['Option'+o+' Value']!=null) r[I['Option'+o+' Value']]=v.vals[o-1]||'';
+        if(I['Option'+o+' Linked To']!=null) r[I['Option'+o+' Linked To']]='';
+      }
+      if(I['Variant Image']!=null) r[I['Variant Image']]='';
+      r[I['Variant SKU']]=v.sku; r[I['Variant Price']]=price;
+      if(I['Variant Compare At Price']!=null) r[I['Variant Compare At Price']]=cmp;
+      rows.push(r);
+    });
+    p.rows.slice(1).forEach(function(r){ if(!r[I['Option1 Value']]&&r[I['Image Src']]){
+      rows.push(H.map(function(k,c){ return k==='Handle'||/^Image /.test(k)?r[c]:''; })); } });
+    out={rows:rows,name:p.handle+'-variantes.csv'};
+    $('dl').disabled=false;
+  }
+  function fmtMoney(v){ var n=Number(v); return isNaN(n)||v===''?'—':'$'+n.toLocaleString('es-CO',{maximumFractionDigits:2}); }
+
+  $('dl').addEventListener('click',function(){ if(!out) return;
+    var url=URL.createObjectURL(new Blob([toCSV(out.rows)],{type:'text/csv;charset=utf-8'}));
+    var a=document.createElement('a'); a.href=url; a.download=out.name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){URL.revokeObjectURL(url);},1000); });
+
+  ['exp','xl'].forEach(function(k){ var d=$(k+'-drop');
+    d.addEventListener('dragover',function(){d.classList.add('over');}); ['dragleave','drop'].forEach(function(e){ d.addEventListener(e,function(){d.classList.remove('over');}); }); });
+})();
+</script>
+</body></html>
