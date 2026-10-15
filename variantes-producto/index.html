@@ -98,15 +98,32 @@ input:focus-visible,button:focus-visible,.drop:focus-within{outline:3px solid va
 .pdp-price{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;font-weight:700;font-size:22px}
 .pdp-price s{color:var(--muted);font-weight:600;font-size:17px}
 .pdp-price .off{font:800 12px var(--body);background:var(--red);color:#fff;border-radius:999px;padding:3px 9px;letter-spacing:.05em}
+/* Selector como lo pinta el tema (bloque "Elige el sabor de cada tarro" + círculos de color) */
 .pdp-opt{display:grid;gap:8px}
 .pdp-opt .lbl{font-size:14px;font-weight:700}
-.pdp-opt .lbl span{font-weight:600;color:var(--muted)}
-.pills{display:flex;flex-wrap:wrap;gap:8px}
-.pill{font:700 14px var(--body);color:var(--ink);background:#fff;border:1.6px solid var(--line);border-radius:999px;padding:7px 14px;cursor:pointer;transition:transform .08s}
-.pill:hover{background:var(--pink)}
+.pdp-opt .lbl span{display:block;font-weight:600;color:var(--muted);margin-top:2px}
+.rcp-t{font-weight:700;margin:0 0 2px}
+.rcp-s{color:#6b6b6b;font-size:.85rem;margin:0 0 12px}
+.rcp-jar{border:1px solid #e2e0d6;border-radius:12px;padding:12px 14px;margin-bottom:10px;background:#fff}
+.rcp-jh{display:flex;align-items:center;gap:8px;font-weight:700;font-size:.9rem;margin-bottom:10px}
+.rcp-jn{width:22px;height:22px;border-radius:50%;background:#16241c;color:#fff;display:grid;place-items:center;font-size:.72rem;line-height:1;flex:0 0 auto}
+.rcp-pick{margin-left:auto;color:#8a8a8a;font-weight:600;font-size:.8rem}
+.rcp-fl{display:flex;gap:var(--rcp-gap,28px);flex-wrap:wrap}
+.rcp-b{display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;background:none;border:0;padding:0;font:inherit;color:inherit}
+.rcp-c{width:var(--rcp-circle,30px);height:var(--rcp-circle,30px);border-radius:50%;box-shadow:inset 0 0 0 1px rgba(21,32,24,.18)}
+.rcp-nm{font-size:.75rem;line-height:1.15;text-align:center;max-width:7.5rem}
+.rcp-b[aria-pressed=true] .rcp-c{outline:2.5px solid currentColor;outline-offset:3px}
+.rcp-b[aria-pressed=true] .rcp-nm{font-weight:700}
+.rcp-sum{margin-top:6px;font-weight:700;font-size:.9rem}
+.rcp-sum.rcp-warn{color:#b4531f}
+.rt-flavor-list{display:flex;flex-wrap:wrap;gap:var(--rcp-gap,28px)}
+.rt-flavor-list .rcp-c{width:44px;height:44px}
+.rt-flavor-list .rcp-nm{font-size:14px}
+.pills{display:flex;flex-wrap:wrap;gap:10px}
+.pill{font:600 14px var(--body);color:var(--ink);background:#f1f1ec;border:0;border-radius:10px;padding:9px 16px;cursor:pointer}
 .pill[aria-pressed=true]{background:var(--ink);color:#fff}
-.pill.na{color:var(--muted);border-style:dashed;text-decoration:line-through;background:var(--paper)}
-.pill.na[aria-pressed=true]{background:var(--muted);color:#fff;text-decoration:line-through}
+.pill.na{text-decoration:line-through;color:var(--muted)}
+.stage.mobile .rcp-fl,.stage.mobile .rt-flavor-list{gap:18px}
 .pdp-cta{font:700 18px var(--display);text-transform:uppercase;letter-spacing:.02em;background:var(--lime);color:var(--ink);border:2px solid var(--line);border-radius:12px;box-shadow:3px 4px 0 0 var(--line);padding:13px 24px;width:100%;cursor:default}
 .pdp-cta.na{background:var(--paper);color:var(--muted);box-shadow:none}
 .pdp-meta{font-size:13px;color:var(--muted);font-weight:600;display:flex;gap:6px 14px;flex-wrap:wrap}
@@ -134,7 +151,7 @@ tr.hl td{background:var(--lime-soft)}
 .steps b{color:var(--lime);font-weight:800}
 footer{font-size:13px;color:var(--muted)}
 @media (max-width:749px){.card{padding:14px;gap:10px}.card h2{font-size:22px}.btn{padding:10px 16px;font-size:15px}.stage{padding:10px}}
-@media (prefers-reduced-motion:reduce){.btn,.item,.pill{transition:none}}
+@media (prefers-reduced-motion:reduce){.btn,.item{transition:none}}
 </style>
 </head><body>
 
@@ -204,7 +221,7 @@ footer{font-size:13px;color:var(--muted)}
         </div>
       </div>
     </div>
-    <p class="hint">Es una recreación con el estilo de la tienda para revisar nombres, orden y combinaciones; el tema puede mostrar los botones un poco distinto. Las opciones tachadas son combinaciones que no existen en el xlsx: en la tienda aparecen como no disponibles.</p>
+    <p class="hint">Está armada igual que el selector de tu tema (bloque "Elige el sabor de cada tarro", con los mismos colores y nombres de Configuración del tema › Sabores RUUTS). Si una mezcla de tarros no está en el xlsx, la tienda dice "Esa combinación no está disponible por ahora".</p>
   </section>
 
   <section class="summary" aria-live="polite">
@@ -252,6 +269,26 @@ footer{font-size:13px;color:var(--muted)}
   function short3(s){ return s.normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^A-Za-z0-9]/g,'').slice(0,3).toUpperCase(); }
   function fmtMoney(v){ var n=Number(v); return isNaN(n)||v===''?'—':'$'+n.toLocaleString('es-CO',{maximumFractionDigits:2}); }
   function el(tag,cls,text){ var e=document.createElement(tag); if(cls) e.className=cls; if(text!=null) e.textContent=text; return e; }
+
+
+  /* La misma lista de sabores que Configuración del tema › Sabores RUUTS (nombre, palabras clave, color, nombre corto del selector) */
+  var SABORES=[
+    {n:'Lychee/mangostino',kw:['lychee','mangostino'],c:'#f7b6f6',lbl:'Lychee',o:0},
+    {n:'Fruit Punch',kw:['fruit'],c:'#ff7d55',lbl:'Fruit Punch',o:1},
+    {n:'Oh my berry',kw:['berry'],c:'#de97ff',lbl:'Oh my berry',o:2},
+    {n:'Yellow Crush',kw:['yellow','crush'],c:'#ffda73',lbl:'Yellow Crush',o:3},
+    {n:'Crema',kw:['crema'],c:'#FDFBD4',o:4},
+    {n:'Cereza',kw:['cereza'],c:'#D2042D',o:5}
+  ];
+  var PAL=['#cdee5a','#8fd3f4','#ff9eb5','#9be3c3','#ffb86b','#b8a4ff','#f9e27d','#7fd1b9'];
+  function saborInfo(t){ var raw=String(t||'').replace(/^\s*\d+\s+/,'').trim(), tl=raw.toLowerCase();
+    for(var i=0;i<SABORES.length;i++){ for(var j=0;j<SABORES[i].kw.length;j++){ if(tl.indexOf(SABORES[i].kw[j])>=0) return {n:SABORES[i].n,c:SABORES[i].c,lbl:SABORES[i].lbl||SABORES[i].n,o:SABORES[i].o,m:true}; } }
+    return {n:raw,c:PAL[raw.length%PAL.length],lbl:raw,o:1000,m:false}; }
+  function canon(f){ return saborInfo(f).n; }
+  /* Color de una opción que no es sabor (como el snippet ruuts-color del tema): lista de sabores, luego nombre del color, luego automático */
+  function colorInfo(v){ var i=saborInfo(v); if(i.m) return i.c; var l=v.toLowerCase();
+    var T=[['crema|cream','#f3e7cc'],['cereza|vinotinto|vino','#a3122c'],['negro|black','#152018'],['blanco|white','#ffffff'],['rojo|red','#e72a26'],['rosa|pink|fucsia','#f196e4'],['verde|green|lima','#cdee5a'],['azul|blue','#3d6fd6'],['amarillo|yellow','#f7d84a'],['naranja|orange','#ff7d55'],['morado|lila|purple','#9b6ad6'],['gris|gray|grey','#9a9c98'],['beige|arena','#e6d9bf'],['café|cafe|marr|brown','#7a4a2a']];
+    for(var k=0;k<T.length;k++){ if(new RegExp(T[k][0]).test(l)) return T[k][1]; } return PAL[v.length%PAL.length]; }
 
   function readFile(input,cb,binary){
     var f=input.files[0]; if(!f) return;
@@ -362,9 +399,13 @@ footer{font-size:13px;color:var(--muted)}
     $('xl-info').className='hint'; $('xl-info').textContent='Verde: se juntan como sabores. Rosado: opción aparte. Punteado: no se usa.';
     var flav=cols.filter(function(x){return x.kind==='flavor';}).length, opts=cols.filter(function(x){return x.kind==='opt';});
     $('opt-names').innerHTML='';
-    addName('Opción 1 (sabores)', flav>1?'Elige tus '+flav+' sabores':'Elige el sabor que te haga más feliz');
-    opts.forEach(function(x,n){ addName('Opción '+(n+2)+' ('+x.name+')', x.name); });
-    sel=[]; build();
+    addName('Opción 1 (sabores)', 'Sabor');
+    opts.forEach(function(x,n){
+      /* Si los valores son colores (Crema, Cereza, Beige…), la opción se llama "Color…" para que el tema los pinte como círculos */
+      var isCol=x.uniq.every(function(v){ return !v||/crema|cream|cereza|vino|negro|black|blanco|white|rojo|red|rosa|pink|fucsia|verde|green|lima|azul|blue|amarillo|yellow|naranja|orange|morado|lila|purple|gris|gray|grey|beige|arena|caf|marr|brown/i.test(v); });
+      var nm=/color|colour|tono/i.test(x.name)?x.name:(isCol?'Color'+(/shaker/i.test(x.name)?' del shaker':''):x.name);
+      addName('Opción '+(n+2)+' ('+x.name+')', nm); });
+    sel=[]; picks=[]; build();
   },true); });
   function addName(lbl,val){ var d=el('div','field'), id='on'+$('opt-names').children.length;
     var l=el('label',null,lbl); l.htmlFor=id; var i=el('input'); i.type='text'; i.id=id; i.value=val;
@@ -380,10 +421,11 @@ footer{font-size:13px;color:var(--muted)}
     if(!p||!xl){ st.className='status wait'; st.textContent='Faltan archivos'; $('sum').textContent=!exp?'Sube el export de productos.':!p?'Elige el producto.':'Sube el xlsx de combinaciones.'; renderPreview(); return; }
     var flav=xl.cols.filter(function(x){return x.kind==='flavor';}), opts=xl.cols.filter(function(x){return x.kind==='opt';});
     names=[].map.call($('opt-names').querySelectorAll('input'),function(i){return i.value.trim();});
-    var order=[]; xl.data.forEach(function(r){ flav.forEach(function(x){ var v=txt(r[x.c]); if(v&&order.indexOf(v)<0) order.push(v); }); });
+    var order=[]; xl.data.forEach(function(r){ flav.forEach(function(x){ var v=txt(r[x.c]); if(v){ v=canon(v); if(order.indexOf(v)<0) order.push(v); } }); });
+    order.sort(function(a,b){ return saborInfo(a).o-saborInfo(b).o; });
     var seen={}, dup=0, empty=0;
     xl.data.forEach(function(r){
-      var cnt={}; flav.forEach(function(x){ var v=txt(r[x.c]); if(v) cnt[v]=(cnt[v]||0)+1; });
+      var cnt={}; flav.forEach(function(x){ var v=txt(r[x.c]); if(v){ v=canon(v); cnt[v]=(cnt[v]||0)+1; } });
       var used=order.filter(function(f){return cnt[f];});
       if(!used.length){ empty++; return; }
       var v1=flav.length>1?used.map(function(f){return cnt[f]+' '+f;}).join(' - '):used[0];
@@ -451,6 +493,7 @@ footer{font-size:13px;color:var(--muted)}
   }
 
   /* Vista previa: la página de producto con las opciones como píldoras */
+  var picks=[];
   function renderPreview(){
     var p=picked, box=$('pdp-opts'); box.innerHTML='';
     var img=$('pdp-img'); img.innerHTML='';
@@ -463,26 +506,70 @@ footer{font-size:13px;color:var(--muted)}
     if(!variants.length){ $('pdp-cta').textContent='Añadir al carrito'; $('pdp-cta').className='pdp-cta'; $('pdp-meta').innerHTML=''; return; }
     var nOpt=variants[0].vals.length, valuesBy=[];
     for(var o=0;o<nOpt;o++){ valuesBy[o]=[]; variants.forEach(function(v){ if(valuesBy[o].indexOf(v.vals[o])<0) valuesBy[o].push(v.vals[o]); }); }
-    /* selección por defecto: la primera variante; si una elección ya no existe, se conserva igual (así se ve lo tachado) */
-    for(var o=0;o<nOpt;o++){ if(sel[o]==null||valuesBy[o].indexOf(sel[o])<0) sel[o]=valuesBy[o][0]; }
+    for(var o=1;o<nOpt;o++){ if(sel[o]==null||valuesBy[o].indexOf(sel[o])<0) sel[o]=valuesBy[o][0]; }
     sel.length=nOpt;
-    var exists=function(vals){ return variants.some(function(v){ return v.vals.every(function(x,k){return x===vals[k];}); }); };
-    for(var o=0;o<nOpt;o++){ (function(o){
-      var g=el('div','pdp-opt'), l=el('div','lbl',(names[o]||('Opción '+(o+1)))+': '); l.appendChild(el('span',null,sel[o])); g.appendChild(l);
-      var pills=el('div','pills');
-      valuesBy[o].forEach(function(val){
-        var test=sel.slice(); test[o]=val;
-        var b=el('button','pill'+(exists(test)?'':' na'),val); b.type='button'; b.setAttribute('aria-pressed',String(sel[o]===val));
-        b.addEventListener('click',function(){ sel[o]=val; renderPreview(); });
-        pills.appendChild(b); });
-      g.appendChild(pills); box.appendChild(g); })(o); }
+
+    /* Opción 1 como la arma el tema: si los valores son combos ("2 Lychee - 1 Fruit Punch"), un bloque por tarro con círculos */
+    var SEP=/\s+[-+]\s+/, titles=valuesBy[0], jars=0;
+    titles.forEach(function(t){ var sum=0; t.split(SEP).forEach(function(q){ var m=q.match(/^\s*(\d+)\s+/); if(m) sum+=parseInt(m[1],10); }); if(sum>jars) jars=sum; });
+    var combo=jars>=2;
+    var FL={}, flavs=[];
+    titles.forEach(function(t){ t.split(SEP).forEach(function(q){ var i=saborInfo(q); if(!FL[i.n]){ FL[i.n]=i; flavs.push(i.n); } }); });
+    flavs.sort(function(a,b){ return FL[a].o-FL[b].o; });
+    function sig(t){ var c={}; flavs.forEach(function(f){c[f]=0;}); var parts=t.split(SEP), any=parts.some(function(q){return /^\s*\d+\s+/.test(q);});
+      parts.forEach(function(q){ var m=q.match(/^\s*(\d+)\s+/), f=saborInfo(q).n; c[f]+=m?parseInt(m[1],10):(any?1:jars); }); return c; }
+    function key(c){ return flavs.map(function(f){return c[f]||0;}).join('-'); }
+    var MAP={}; titles.forEach(function(t){ MAP[key(sig(t))]=t; });
+
+    if(combo){
+      if(picks.length!==jars||picks.some(function(x){return !x||flavs.indexOf(x)<0;})){
+        picks=[]; var c0=sig(titles[0]); flavs.forEach(function(f){ for(var k=0;k<c0[f];k++) picks.push(f); }); picks.length=jars; }
+      var c={}; flavs.forEach(function(f){c[f]=0;}); picks.forEach(function(f){ if(f) c[f]++; });
+      sel[0]=picks.every(Boolean)?(MAP[key(c)]||null):null;
+      var wrap=el('div','pdp-opt');
+      wrap.appendChild(el('div','rcp-t','Elige el sabor de cada tarro'));
+      wrap.appendChild(el('div','rcp-s','Puedes repetir o combinar como quieras.'));
+      var ORD=['Primer','Segundo','Tercer','Cuarto','Quinto','Sexto'];
+      for(var j=0;j<jars;j++){ (function(j){
+        var d=el('div','rcp-jar'), h=el('div','rcp-jh'); h.appendChild(el('span','rcp-jn',String(j+1))); h.appendChild(document.createTextNode((ORD[j]?ORD[j]+' tarro':'Tarro '+(j+1))));
+        h.appendChild(el('span','rcp-pick',picks[j]?FL[picks[j]].lbl:'elige')); d.appendChild(h);
+        var fl=el('div','rcp-fl');
+        flavs.forEach(function(f){ var b=el('button','rcp-b'); b.type='button'; b.setAttribute('aria-pressed',String(picks[j]===f));
+          var cc=el('span','rcp-c'); cc.style.background=FL[f].c; b.appendChild(cc); b.appendChild(el('span','rcp-nm',FL[f].lbl));
+          b.addEventListener('click',function(){ picks[j]=f; renderPreview(); }); fl.appendChild(b); });
+        d.appendChild(fl); wrap.appendChild(d); })(j); }
+      var sum=el('div','rcp-sum');
+      if(!picks.every(Boolean)) sum.textContent='';
+      else if(!sel[0]){ sum.textContent='Esa combinación no está disponible por ahora.'; sum.className='rcp-sum rcp-warn'; }
+      else sum.textContent='Tu combo: '+flavs.filter(function(f){return c[f];}).map(function(f){return c[f]+' × '+FL[f].lbl;}).join('  +  ');
+      wrap.appendChild(sum); box.appendChild(wrap);
+    } else {
+      if(sel[0]==null||titles.indexOf(sel[0])<0) sel[0]=titles[0];
+      box.appendChild(optionBlock(0,titles,true));
+    }
+    /* Las demás opciones, como el tema: círculos si es un color, botones si no */
+    for(var o=1;o<nOpt;o++){ box.appendChild(optionBlock(o,valuesBy[o],false)); }
+
     var hit=-1; variants.forEach(function(v,i){ if(hit<0&&v.vals.every(function(x,k){return x===sel[k];})) hit=i; });
     var cta=$('pdp-cta'); cta.textContent=hit>=0?'Añadir al carrito':'No disponible'; cta.className='pdp-cta'+(hit>=0?'':' na');
     var meta=$('pdp-meta'); meta.innerHTML='';
-    if(hit>=0){ meta.appendChild(el('span',null,'Variante '+(hit+1)+' de '+variants.length)); if(variants[hit].sku){ var s=el('span',null,'SKU '); s.appendChild(el('code',null,variants[hit].sku)); meta.appendChild(s); } }
+    if(hit>=0){ meta.appendChild(el('span',null,'Variante '+(hit+1)+' de '+variants.length+' · '+variants[hit].vals.join(' / '))); if(variants[hit].sku){ var s=el('span',null,'SKU '); s.appendChild(el('code',null,variants[hit].sku)); meta.appendChild(s); } }
     else meta.appendChild(el('span',null,'Esa combinación no está en el xlsx.'));
     [].forEach.call(document.querySelectorAll('#table tr.hl'),function(r){r.classList.remove('hl');});
     if(hit>=0){ var row=$('v'+hit); if(row) row.classList.add('hl'); }
+  }
+  function optionBlock(o,values,isFlavor){
+    var nm=names[o]||('Opción '+(o+1)), isColor=/color|colour|tono/i.test(nm)||isFlavor;
+    var g=el('div','pdp-opt'), l=el('div','lbl',nm+':'); if(isColor) l.appendChild(el('span',null,sel[o]||'')); g.appendChild(l);
+    var list=el('div',isColor?'rt-flavor-list':'pills');
+    var exists=function(vals){ return variants.some(function(v){ return v.vals.every(function(x,k){return x===vals[k];}); }); };
+    values.forEach(function(val){
+      var test=sel.slice(); test[o]=val; var ok=sel[0]?exists(test):true;
+      var b=el('button',isColor?'rcp-b':'pill'+(ok?'':' na')); b.type='button'; b.setAttribute('aria-pressed',String(sel[o]===val));
+      if(isColor){ var i=isFlavor?saborInfo(val):null, cc=el('span','rcp-c'); cc.style.background=i?i.c:colorInfo(val); b.appendChild(cc); b.appendChild(el('span','rcp-nm',i?i.lbl:val)); }
+      else b.textContent=val;
+      b.addEventListener('click',function(){ sel[o]=val; renderPreview(); }); list.appendChild(b); });
+    g.appendChild(list); return g;
   }
   [].forEach.call(document.querySelectorAll('.seg button'),function(b){ b.addEventListener('click',function(){
     [].forEach.call(document.querySelectorAll('.seg button'),function(x){x.setAttribute('aria-pressed','false');}); b.setAttribute('aria-pressed','true');
