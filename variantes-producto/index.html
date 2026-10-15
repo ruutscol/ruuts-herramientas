@@ -32,8 +32,8 @@ h1 span{background:linear-gradient(transparent 58%,var(--lime) 58%)}
 .row{display:flex;gap:12px;flex-wrap:wrap;align-items:end}
 .row .field{flex:1 1 180px}
 label{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-input[type=text],input[type=number],input[type=search]{font:600 16px var(--body);color:var(--ink);background:var(--paper);border:2px solid var(--line);border-radius:12px;padding:10px 12px;width:100%;min-width:0}
-input:focus-visible,button:focus-visible,.drop:focus-within{outline:3px solid var(--pink);outline-offset:2px}
+select,input[type=text],input[type=number],input[type=search]{font:600 16px var(--body);color:var(--ink);background:var(--paper);border:2px solid var(--line);border-radius:12px;padding:10px 12px;width:100%;min-width:0}
+input:focus-visible,select:focus-visible,button:focus-visible,.drop:focus-within{outline:3px solid var(--pink);outline-offset:2px}
 .drop{position:relative;display:grid;gap:2px;justify-items:center;text-align:center;background:var(--paper);border:2px dashed var(--line);border-radius:14px;padding:18px 12px;cursor:pointer}
 .drop:hover,.drop.over{background:var(--lime-soft)}
 .drop b{font-family:var(--display);text-transform:uppercase;font-size:20px;font-weight:700}
@@ -141,6 +141,7 @@ input:focus-visible,button:focus-visible,.drop:focus-within{outline:3px solid va
 .msgs{margin:0;padding-left:20px;display:grid;gap:4px}
 .msgs:empty{display:none}
 .table{overflow:auto;max-height:420px;border-radius:12px;background:#fff;color:var(--ink);border:2px solid var(--line)}
+.card .msgs{color:var(--ink);font-weight:600;font-size:14px}
 table{border-collapse:collapse;width:100%;font-size:14px}
 th,td{text-align:left;padding:7px 10px;border-bottom:1px solid #e3e6da;white-space:nowrap}
 th{position:sticky;top:0;background:var(--lime-soft);font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}
@@ -154,11 +155,14 @@ footer{font-size:13px;color:var(--muted)}
 @media (prefers-reduced-motion:reduce){.btn,.item{transition:none}}
 
 /* Paso 4: app de bundles */
+#bn-body{min-width:0;display:grid;gap:10px}
 .comps{display:grid;gap:10px}
 .comp{display:grid;gap:8px;background:var(--paper);border:1.6px solid var(--line);border-radius:12px;padding:10px}
 .comp .top{display:flex;gap:8px;flex-wrap:wrap;align-items:end}
+.comp .top .field{display:grid;gap:4px;align-self:end}
+.comp .top .x{padding-bottom:14px}
 .comp .top .field{flex:1 1 200px}
-.comp .top .field.sm{flex:0 1 90px}
+.comp .top .field.sm{flex:0 1 110px}
 .comp .top .field.md{flex:1 1 160px}
 .comp select,.comp input{width:100%;min-width:0;max-width:100%}
 #bn-prod{width:100%;max-width:100%}
@@ -168,19 +172,20 @@ footer{font-size:13px;color:var(--muted)}
 .comp summary.bad{color:var(--red)}
 .map{display:grid;gap:6px;margin-top:6px;grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}
 .map label{display:grid;gap:2px;font-size:12px;font-weight:700}
-.map select{width:100%}
+.map select{width:100%;padding:6px 10px;font-size:14px}
 .mini{font:700 13px var(--body);background:var(--card);border:1.6px solid var(--line);border-radius:999px;padding:5px 12px;cursor:pointer;justify-self:start}
 .mini:hover{background:var(--pink)}
 .bsum{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:14px}
-.bsum b{color:var(--ink)}
-.toggle{background:none;border:0;color:var(--lime);font:700 14px var(--body);cursor:pointer;text-decoration:underline;padding:0;justify-self:start}
-.summary .toggle{color:var(--lime)}
-.dls{display:grid;gap:12px}
+.bsum .tag{background:var(--lime)}
+.toggle{background:none;border:0;color:var(--ink);font:700 14px var(--body);cursor:pointer;text-decoration:underline;padding:0;justify-self:start}
+.bn-dl{display:grid;gap:6px;justify-items:start;margin-top:4px}
+.bn-dl small{color:var(--muted);font-size:13px}
+.bn-dl .n{display:inline-block;font:700 12px var(--body);text-transform:uppercase;letter-spacing:.06em;background:var(--ink);color:#fff;border-radius:999px;padding:2px 9px}
+.bn-dl.off .n{background:var(--paper);color:var(--muted);border:1.6px solid var(--line)}
 .dl{display:grid;gap:6px;justify-items:start}
 .dl small{color:#cfd6c9;font-size:13px}
 .dl .n{display:inline-block;font:700 12px var(--body);text-transform:uppercase;letter-spacing:.06em;background:var(--lime);color:var(--ink);border-radius:999px;padding:2px 9px}
 .dl.off .n{background:#3b4a3e;color:#cfd6c9}
-@media (min-width:750px){.dls{grid-template-columns:1fr 1fr}}
 </style>
 </head><body>
 
@@ -253,10 +258,23 @@ footer{font-size:13px;color:var(--muted)}
     <p class="hint">Está armada igual que el selector de tu tema (bloque "Elige el sabor de cada tarro", con los mismos colores y nombres de Configuración del tema › Sabores RUUTS). Si una mezcla de tarros no está en el xlsx, la tienda dice "Esa combinación no está disponible por ahora".</p>
   </section>
 
+  <section class="summary" aria-live="polite">
+    <h2>Así va a quedar</h2>
+    <span class="status wait" id="status">Faltan archivos</span>
+    <p id="sum">Sube los dos archivos para ver las variantes.</p>
+    <ul class="msgs" id="msgs"></ul>
+    <div class="table" id="table" hidden></div>
+    <div class="dl"><span class="n">Paso 1</span><button class="btn" type="button" id="dl" disabled>Descargar CSV para Shopify</button><small>Súbelo en <b>Productos › Importar</b> marcando «Sobrescribir productos con el mismo handle». Las variantes que tenía el producto se reemplazan por estas; descripción, imágenes, etiquetas y estado quedan como están en el export.</small></div>
+    <ol class="steps">
+      <li>Importa este CSV en Shopify.</li>
+      <li>Si el producto es un bundle: exporta desde Simple Bundles, súbelo en el paso siguiente y descarga el <b>CSV 2</b> para la app.</li>
+    </ol>
+  </section>
+
   <section class="card off" id="bn-card" aria-labelledby="t-bn">
-    <span class="eyebrow">Paso 4 · opcional</span>
+    <span class="eyebrow">Después de importar en Shopify · opcional</span>
     <h2 id="t-bn">App de bundles <small>qué lleva cada variante</small></h2>
-    <p class="hint">Si el producto es un bundle en <b>Simple Bundles &amp; Kits</b>, aquí sale un segundo CSV que asocia cada variante con sus productos y cantidades. Primero importa el CSV 1 en Shopify, luego en la app ve a <b>Bundles › Export</b> y sube ese archivo aquí: trae las variantes nuevas con su ID y los productos que ya usas en otros bundles.</p>
+    <p class="hint">Si el producto es un bundle en <b>Simple Bundles &amp; Kits</b>, aquí sale un segundo CSV que asocia cada variante con sus productos y cantidades. Ya con el CSV 1 importado en Shopify, en la app ve a <b>Bundles › Export</b> y sube ese archivo aquí: trae las variantes nuevas con su ID y los productos que ya usas en otros bundles.</p>
     <label class="drop" id="bn-drop"><b>Subir export de la app</b><small id="bn-name">CSV que exporta Simple Bundles (columnas bundle_product_id, bundle_item_…)</small><input type="file" id="bn-file" accept=".csv,text/csv"></label>
     <div id="bn-body" hidden>
       <div class="field" id="bn-prod-f" hidden><label for="bn-prod">Bundle en la app</label><select id="bn-prod"></select></div>
@@ -264,28 +282,12 @@ footer{font-size:13px;color:var(--muted)}
       <div class="comps" id="bn-comps"></div>
       <button type="button" class="mini" id="bn-add">+ Agregar componente</button>
       <p class="hint">Cada fila es algo que va dentro del bundle. «Según Sabor» pone la variante de ese sabor con la cantidad de tarros que tenga la combinación; «Según Color del shaker» pone la variante del color elegido.</p>
+      <div class="bsum" id="bn-sum" hidden></div>
+      <ul class="msgs" id="bn-msgs"></ul>
+      <button type="button" class="toggle" id="bn-toggle" hidden>Ver qué lleva cada variante</button>
+      <div class="table" id="bn-table" hidden></div>
+      <div class="bn-dl off" id="dl2-box"><span class="n">Paso 2</span><button class="btn" type="button" id="dl2" disabled>Descargar CSV para la app de bundles</button><small id="dl2-hint">Se activa cuando subas el export de Simple Bundles.</small></div>
     </div>
-  </section>
-
-  <section class="summary" aria-live="polite">
-    <h2>Así va a quedar</h2>
-    <span class="status wait" id="status">Faltan archivos</span>
-    <p id="sum">Sube los dos archivos para ver las variantes.</p>
-    <ul class="msgs" id="msgs"></ul>
-    <div class="table" id="table" hidden></div>
-    <div class="bsum" id="bn-sum" hidden></div>
-    <ul class="msgs" id="bn-msgs"></ul>
-    <button type="button" class="toggle" id="bn-toggle" hidden>Ver qué lleva cada variante</button>
-    <div class="table" id="bn-table" hidden></div>
-    <div class="dls">
-      <div class="dl"><span class="n">Paso 1</span><button class="btn" type="button" id="dl" disabled>Descargar CSV para Shopify</button><small>Súbelo en <b>Productos › Importar</b> marcando «Sobrescribir productos con el mismo handle».</small></div>
-      <div class="dl off" id="dl2-box"><span class="n">Paso 2</span><button class="btn" type="button" id="dl2" disabled>Descargar CSV para la app de bundles</button><small id="dl2-hint">Se activa cuando subas el export de Simple Bundles en el paso 4.</small></div>
-    </div>
-    <ol class="steps">
-      <li>Importa el <b>CSV 1</b> en Shopify. Las variantes que tenía el producto se reemplazan por estas; descripción, imágenes, etiquetas y estado quedan como están en el export.</li>
-      <li>En Simple Bundles exporta los bundles, súbelo en el paso 4 y descarga el <b>CSV 2</b>.</li>
-      <li>Importa el <b>CSV 2</b> en la app (Bundles › Import): cada variante queda asociada con sus productos y cantidades.</li>
-    </ol>
   </section>
 
   <footer>Usa un export reciente: el CSV toma del export todo lo que no son variantes, así que si cambiaste el producto en Shopify después de exportar, vuelve a exportar. El inventario no se toca: las variantes nuevas quedan en 0.</footer>
@@ -525,7 +527,7 @@ footer{font-size:13px;color:var(--muted)}
     });
     p.rows.slice(1).forEach(function(r){ if(!r[I['Option1 Value']]&&r[I['Image Src']]){
       rows.push(H.map(function(k,c){ return k==='Handle'||/^Image /.test(k)?r[c]:''; })); } });
-    out={rows:rows,name:p.handle+'-variantes.csv'};
+    out={rows:rows,name:'shopify-'+p.handle+'.csv'};
     $('dl').disabled=false;
     buildBundle();
   }
@@ -701,13 +703,13 @@ footer{font-size:13px;color:var(--muted)}
   function buildBundle(){
     var box=$('bn-comps'), sum=$('bn-sum'), msgs=$('bn-msgs'), tbl=$('bn-table'), tg=$('bn-toggle'), b2=$('dl2'), hint=$('dl2-hint');
     out2=null; b2.disabled=true; $('dl2-box').classList.add('off'); sum.hidden=true; sum.innerHTML=''; msgs.innerHTML=''; tbl.hidden=true; tbl.innerHTML=''; tg.hidden=true; box.innerHTML='';
-    hint.textContent='Se activa cuando subas el export de Simple Bundles en el paso 4.';
+    hint.textContent='Se activa cuando subas el export de Simple Bundles.';
     if(!bn||!picked||!xl||!variants.length) return;
     /* Bundle elegido */
     var sel2=$('bn-prod'); sel2.innerHTML=''; var o0=el('option',null,'— elige el bundle —'); o0.value=''; sel2.appendChild(o0);
     bn.blist.forEach(function(b){ var o=el('option',null,b.title+' ('+b.vars.length+' variantes)'); o.value=b.pid; sel2.appendChild(o); });
     var B=chosenBundle(); sel2.value=B?B.pid:''; $('bn-prod-f').hidden=!!B&&norm(B.title)===norm(picked.title||'');
-    if(!B){ $('bn-info').className='hint bad'; $('bn-info').textContent='En este export no hay un bundle que se llame «'+(picked.title||picked.handle)+'». Si ya importaste el CSV 1 y el producto está en la app, elígelo arriba; si no, impórtalo primero y vuelve a exportar.'; hint.textContent='Falta elegir el bundle en el paso 4.'; return; }
+    if(!B){ $('bn-info').className='hint bad'; $('bn-info').textContent='En este export no hay un bundle que se llame «'+(picked.title||picked.handle)+'». Si ya importaste el CSV 1 y el producto está en la app, elígelo arriba; si no, impórtalo primero y vuelve a exportar.'; hint.textContent='Falta elegir el bundle.'; return; }
     $('bn-info').className='hint'; $('bn-info').textContent='Bundle «'+B.title+'» con '+B.vars.length+' variantes en la app. Abajo, qué lleva cada una:';
     if(!comps) comps=suggestComps();
     if(!comps.length) comps.push({pid:bn.plist[0]?bn.plist[0].pid:'',mode:'fixed',vid:bn.plist[0]?bn.plist[0].items[0].vid:'',qty:1,map:{}});
@@ -787,8 +789,8 @@ footer{font-size:13px;color:var(--muted)}
     if(bnOpen&&detail.length){ var tb=el('table'), th=el('thead'), tr=el('tr'); ['#','Variante','Lleva','ID en la app'].forEach(function(h){tr.appendChild(el('th',null,h));}); th.appendChild(tr); tb.appendChild(th);
       var body=el('tbody'); detail.forEach(function(d,i){ var r=el('tr'); r.appendChild(el('td','num',String(i+1))); r.appendChild(el('td',null,d.t)); r.appendChild(el('td',null,d.lines.join(' + '))); r.appendChild(el('td','sku',d.id)); body.appendChild(r); });
       tb.appendChild(body); tbl.appendChild(tb); tbl.hidden=false; }
-    if(bad||rows.length<2){ hint.textContent='Revisa los avisos del paso 4.'; return; }
-    out2={rows:rows,name:picked.handle+'-bundles.csv'};
+    if(bad||rows.length<2){ hint.textContent='Revisa los avisos de arriba.'; return; }
+    out2={rows:rows,name:'bundle-'+picked.handle+'.csv'};
     b2.disabled=false; $('dl2-box').classList.remove('off'); hint.textContent='Súbelo en Simple Bundles › Bundles › Import. '+(rows.length-1)+' filas: una por cada producto dentro de cada variante.';
   }
   function download(o){ var url=URL.createObjectURL(new Blob([toCSV(o.rows)],{type:'text/csv;charset=utf-8'}));
