@@ -1,0 +1,807 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Variantes de producto RUUTS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Passion+One:wght@400;700&family=Fustat:wght@400;500;600;700;800&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+/* Layout: paso 1 (export + buscador de productos) y paso 2 (xlsx) lado a lado en PC, luego ajustes, vista previa de la página de producto, tabla y descarga. Mismo look del programador de banners, solo claro. Todo pasa en el navegador: no se envía nada a Shopify. */
+:root{
+  --ink:#152018; --lime:#cdee5a; --lime-soft:#ecfca1; --pink:#f5cbf7; --pink-strong:#f196e4; --red:#e72a26; --green:#3aad4e;
+  --paper:#f7f8f1; --card:#ffffff; --muted:#5f6f60; --line:#152018;
+  --display:'Passion One','Arial Black',Impact,sans-serif;
+  --body:'Fustat','Helvetica Neue',Arial,sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5}
+.wrap{max-width:1080px;margin:0 auto;padding-inline:16px;padding-block:24px 40px;display:grid;gap:18px}
+.pair{display:grid;gap:18px;grid-template-columns:1fr}
+@media (min-width:750px){.wrap{padding-inline:22px}.pair{grid-template-columns:1fr 1fr;align-items:stretch}}
+header{display:grid;gap:8px}
+.back{justify-self:start;font-weight:700;font-size:13px;letter-spacing:.06em;text-transform:uppercase;background:var(--ink);color:var(--lime);border-radius:999px;padding:6px 14px;text-decoration:none}
+h1{font-family:var(--display);font-weight:700;text-transform:uppercase;font-size:clamp(34px,7vw,52px);line-height:.95;margin:6px 0 0;text-wrap:balance}
+h1 span{background:linear-gradient(transparent 58%,var(--lime) 58%)}
+.lead{margin:0;color:var(--muted);max-width:62ch}
+.eyebrow{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;background:var(--lime);border:1.6px solid var(--line);border-radius:999px;padding:2px 9px;justify-self:start}
+.card{background:var(--card);border:2px solid var(--line);border-radius:18px;box-shadow:4px 5px 0 0 var(--line);padding:18px;display:grid;gap:12px;align-content:start;min-width:0}
+.card.off{opacity:.45;pointer-events:none}
+.card h2{font-family:var(--display);font-weight:700;text-transform:uppercase;font-size:26px;line-height:1;margin:0;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.card h2 small{font-family:var(--body);font-size:13px;font-weight:600;text-transform:none;color:var(--muted)}
+.field{display:grid;gap:4px;min-width:0}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:end}
+.row .field{flex:1 1 180px}
+label{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+select,input[type=text],input[type=number],input[type=search]{font:600 16px var(--body);color:var(--ink);background:var(--paper);border:2px solid var(--line);border-radius:12px;padding:10px 12px;width:100%;min-width:0}
+input:focus-visible,select:focus-visible,button:focus-visible,.drop:focus-within{outline:3px solid var(--pink);outline-offset:2px}
+.drop{position:relative;display:grid;gap:2px;justify-items:center;text-align:center;background:var(--paper);border:2px dashed var(--line);border-radius:14px;padding:18px 12px;cursor:pointer}
+.drop:hover,.drop.over{background:var(--lime-soft)}
+.drop b{font-family:var(--display);text-transform:uppercase;font-size:20px;font-weight:700}
+.drop small{color:var(--muted);font-weight:600}
+.drop input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%}
+.drop.ok{background:var(--lime-soft);border-style:solid}
+.hint{margin:0;font-size:14px;color:var(--muted)}
+.hint.bad{color:var(--red);font-weight:700}
+.cols,.chips{display:flex;gap:8px;flex-wrap:wrap}
+.tag{font:700 13px var(--body);background:var(--card);border:1.6px solid var(--line);border-radius:999px;padding:4px 11px}
+.tag.flavor{background:var(--lime)}
+.tag.opt{background:var(--pink)}
+.tag.skip{background:var(--paper);color:var(--muted);border-style:dashed}
+/* Buscador de productos */
+.search{position:relative}
+.search input{padding-left:40px}
+.search svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);width:18px;height:18px;pointer-events:none}
+.chip{font:700 13px var(--body);background:var(--card);color:var(--ink);border:1.6px solid var(--line);border-radius:999px;padding:5px 12px;cursor:pointer}
+.chip:hover{background:var(--pink)}
+.chip[aria-pressed=true]{background:var(--ink);color:#fff}
+.chip i{font-style:normal;opacity:.65;margin-left:4px}
+.list{display:grid;gap:8px;max-height:360px;overflow:auto;padding:3px 3px 6px;margin:-3px}
+.item{display:grid;grid-template-columns:56px 1fr auto;gap:12px;align-items:center;text-align:left;font:inherit;color:inherit;background:var(--card);border:2px solid var(--line);border-radius:14px;padding:8px 10px 8px 8px;cursor:pointer;box-shadow:2px 3px 0 0 var(--line);transition:transform .08s,box-shadow .08s}
+.item:hover{transform:translate(-1px,-1px);box-shadow:3px 4px 0 0 var(--line);background:var(--lime-soft)}
+.item[aria-pressed=true]{background:var(--lime);box-shadow:3px 4px 0 0 var(--pink-strong)}
+.thumb{width:56px;height:56px;border-radius:10px;border:1.6px solid var(--line);object-fit:cover;background:var(--paper)}
+.thumb.none{display:grid;place-items:center;font-size:11px;font-weight:800;color:var(--muted);border-style:dashed;text-transform:uppercase}
+.item b{display:block;font-weight:700;font-size:15px;line-height:1.25}
+.item b mark{background:var(--lime-soft);color:inherit;padding:0 1px;border-radius:3px}
+.item>div{min-width:0}
+.item small{display:block;color:var(--muted);font-size:12.5px;font-weight:600;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.st{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border-radius:999px;padding:3px 9px;border:1.6px solid var(--line);white-space:nowrap}
+.st.active{background:var(--lime);color:var(--ink)}
+.st.draft{background:var(--pink);color:var(--ink)}
+.st.archived{background:var(--paper);color:var(--muted);border-style:dashed}
+.empty{padding:16px;text-align:center;color:var(--muted);font-weight:600;border:2px dashed rgba(21,32,24,.3);border-radius:14px}
+.picked{display:grid;grid-template-columns:72px 1fr;gap:12px;align-items:center;background:var(--lime-soft);border:2px solid var(--line);border-radius:14px;padding:10px;box-shadow:3px 4px 0 0 var(--pink-strong)}
+.picked .thumb{width:72px;height:72px}
+.picked b{display:block;font-family:var(--display);text-transform:uppercase;font-size:19px;line-height:1.05}
+.picked small{display:block;color:var(--muted);font-size:13px;font-weight:600;margin-top:4px}
+.picked button{justify-self:start;margin-top:6px;font:700 13px var(--body);background:var(--card);border:1.6px solid var(--line);border-radius:999px;padding:4px 11px;cursor:pointer}
+.picked button:hover{background:var(--pink)}
+.btn{font:700 17px var(--display);text-transform:uppercase;letter-spacing:.03em;background:var(--lime);color:var(--ink);border:2px solid var(--line);border-radius:12px;box-shadow:3px 4px 0 0 var(--line);padding:12px 22px;cursor:pointer;transition:transform .08s,box-shadow .08s;justify-self:start}
+.btn:hover{transform:translate(1px,1px);box-shadow:2px 3px 0 0 var(--line)}
+.btn:active{transform:translate(3px,4px);box-shadow:0 0 0 0 var(--line)}
+.btn[disabled]{opacity:.45;cursor:not-allowed;transform:none;box-shadow:3px 4px 0 0 var(--line)}
+/* Vista previa de la página de producto */
+.seg{display:inline-flex;background:var(--card);border:2px solid var(--line);border-radius:999px;box-shadow:2px 3px 0 0 var(--line);padding:3px;gap:2px;justify-self:start}
+.seg button{font:700 14px var(--body);color:var(--ink);background:transparent;border:0;border-radius:999px;padding:6px 14px;cursor:pointer}
+.seg button:hover{background:var(--pink)}
+.seg button[aria-pressed=true]{background:var(--ink);color:var(--lime)}
+.stage{background:var(--paper);border:2px dashed rgba(21,32,24,.3);border-radius:16px;padding:16px;display:grid;justify-items:center;overflow:auto}
+.pdp{width:100%;max-width:880px;background:#fefffe;border:2px solid var(--line);border-radius:18px;padding:20px;display:grid;gap:22px;grid-template-columns:1fr;font-family:var(--body)}
+.stage.pc .pdp{grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);align-items:start}
+.stage.mobile .pdp{max-width:390px;padding:14px;gap:16px}
+.pdp-img{aspect-ratio:1;border-radius:14px;border:1.6px solid rgba(21,32,24,.2);background:var(--lime-soft);display:grid;place-items:center;overflow:hidden;color:var(--muted);font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.08em}
+.pdp-img img{width:100%;height:100%;object-fit:contain;display:block;background:#fff}
+.pdp-info{display:grid;gap:14px;min-width:0}
+.pdp-vendor{font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.pdp-title{font-family:var(--display);font-weight:700;text-transform:uppercase;font-size:clamp(22px,3.2vw,32px);line-height:1;margin:0;text-wrap:balance}
+.stage.mobile .pdp-title{font-size:24px}
+.pdp-price{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;font-weight:700;font-size:22px}
+.pdp-price s{color:var(--muted);font-weight:600;font-size:17px}
+.pdp-price .off{font:800 12px var(--body);background:var(--red);color:#fff;border-radius:999px;padding:3px 9px;letter-spacing:.05em}
+/* Selector como lo pinta el tema (bloque "Elige el sabor de cada tarro" + círculos de color) */
+.pdp-opt{display:grid;gap:8px}
+.pdp-opt .lbl{font-size:14px;font-weight:700}
+.pdp-opt .lbl span{display:block;font-weight:600;color:var(--muted);margin-top:2px}
+.rcp-t{font-weight:700;margin:0 0 2px}
+.rcp-s{color:#6b6b6b;font-size:.85rem;margin:0 0 12px}
+.rcp-jar{border:1px solid #e2e0d6;border-radius:12px;padding:12px 14px;margin-bottom:10px;background:#fff}
+.rcp-jh{display:flex;align-items:center;gap:8px;font-weight:700;font-size:.9rem;margin-bottom:10px}
+.rcp-jn{width:22px;height:22px;border-radius:50%;background:#16241c;color:#fff;display:grid;place-items:center;font-size:.72rem;line-height:1;flex:0 0 auto}
+.rcp-pick{margin-left:auto;color:#8a8a8a;font-weight:600;font-size:.8rem}
+.rcp-fl{display:flex;gap:var(--rcp-gap,28px);flex-wrap:wrap}
+.rcp-b{display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;background:none;border:0;padding:0;font:inherit;color:inherit}
+.rcp-c{width:var(--rcp-circle,30px);height:var(--rcp-circle,30px);border-radius:50%;box-shadow:inset 0 0 0 1px rgba(21,32,24,.18)}
+.rcp-nm{font-size:.75rem;line-height:1.15;text-align:center;max-width:7.5rem}
+.rcp-b[aria-pressed=true] .rcp-c{outline:2.5px solid currentColor;outline-offset:3px}
+.rcp-b[aria-pressed=true] .rcp-nm{font-weight:700}
+.rcp-sum{margin-top:6px;font-weight:700;font-size:.9rem}
+.rcp-sum.rcp-warn{color:#b4531f}
+.rt-flavor-list{display:flex;flex-wrap:wrap;gap:var(--rcp-gap,28px)}
+.rt-flavor-list .rcp-c{width:44px;height:44px}
+.rt-flavor-list .rcp-nm{font-size:14px}
+.pills{display:flex;flex-wrap:wrap;gap:10px}
+.pill{font:600 14px var(--body);color:var(--ink);background:#f1f1ec;border:0;border-radius:10px;padding:9px 16px;cursor:pointer}
+.pill[aria-pressed=true]{background:var(--ink);color:#fff}
+.pill.na{text-decoration:line-through;color:var(--muted)}
+.stage.mobile .rcp-fl,.stage.mobile .rt-flavor-list{gap:18px}
+.pdp-cta{font:700 18px var(--display);text-transform:uppercase;letter-spacing:.02em;background:var(--lime);color:var(--ink);border:2px solid var(--line);border-radius:12px;box-shadow:3px 4px 0 0 var(--line);padding:13px 24px;width:100%;cursor:default}
+.pdp-cta.na{background:var(--paper);color:var(--muted);box-shadow:none}
+.pdp-meta{font-size:13px;color:var(--muted);font-weight:600;display:flex;gap:6px 14px;flex-wrap:wrap}
+.pdp-meta code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:var(--ink);background:var(--lime-soft);border-radius:6px;padding:1px 6px}
+.pdp-note{font-size:13px;color:var(--muted);font-weight:600;display:flex;gap:14px;flex-wrap:wrap}
+.pdp-note span::before{content:'✓ ';color:var(--green);font-weight:800}
+/* Resumen y tabla */
+.summary{background:var(--ink);color:#fff;border-radius:18px;padding:18px;display:grid;gap:12px;min-width:0}
+.summary h2{font-family:var(--display);text-transform:uppercase;font-size:24px;margin:0;color:var(--lime)}
+.summary p{margin:0}
+.status{justify-self:start;font-weight:800;font-size:13px;letter-spacing:.05em;text-transform:uppercase;border-radius:999px;padding:5px 12px}
+.status.live{background:var(--lime);color:var(--ink)}
+.status.wait{background:var(--pink);color:var(--ink)}
+.status.bad{background:var(--red);color:#fff}
+.msgs{margin:0;padding-left:20px;display:grid;gap:4px}
+.msgs:empty{display:none}
+.table{overflow:auto;max-height:420px;border-radius:12px;background:#fff;color:var(--ink);border:2px solid var(--line)}
+.card .msgs{color:var(--ink);font-weight:600;font-size:14px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid #e3e6da;white-space:nowrap}
+th{position:sticky;top:0;background:var(--lime-soft);font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}
+td.num{color:var(--muted);font-variant-numeric:tabular-nums}
+td.sku{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px}
+tr.hl td{background:var(--lime-soft)}
+.steps{margin:0;padding-left:20px;display:grid;gap:6px;color:#fff}
+.steps b{color:var(--lime);font-weight:800}
+footer{font-size:13px;color:var(--muted)}
+@media (max-width:749px){.card{padding:14px;gap:10px}.card h2{font-size:22px}.btn{padding:10px 16px;font-size:15px}.stage{padding:10px}}
+@media (prefers-reduced-motion:reduce){.btn,.item{transition:none}}
+
+/* Paso 4: app de bundles */
+#bn-body{min-width:0;display:grid;gap:10px}
+.comps{display:grid;gap:10px}
+.comp{display:grid;gap:8px;background:var(--paper);border:1.6px solid var(--line);border-radius:12px;padding:10px}
+.comp .top{display:flex;gap:8px;flex-wrap:wrap;align-items:end}
+.comp .top .field{display:grid;gap:4px;align-self:end}
+.comp .top .x{padding-bottom:14px}
+.comp .top .field{flex:1 1 200px}
+.comp .top .field.sm{flex:0 1 110px}
+.comp .top .field.md{flex:1 1 160px}
+.comp select,.comp input{width:100%;min-width:0;max-width:100%}
+#bn-prod{width:100%;max-width:100%}
+.comp .x{background:none;border:0;color:var(--muted);font:700 13px var(--body);cursor:pointer;text-decoration:underline;padding:0 0 8px;align-self:end}
+.comp details{font-size:13px}
+.comp summary{cursor:pointer;font-weight:700}
+.comp summary.bad{color:var(--red)}
+.map{display:grid;gap:6px;margin-top:6px;grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}
+.map label{display:grid;gap:2px;font-size:12px;font-weight:700}
+.map select{width:100%;padding:6px 10px;font-size:14px}
+.mini{font:700 13px var(--body);background:var(--card);border:1.6px solid var(--line);border-radius:999px;padding:5px 12px;cursor:pointer;justify-self:start}
+.mini:hover{background:var(--pink)}
+.bsum{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:14px}
+.bsum .tag{background:var(--lime)}
+.toggle{background:none;border:0;color:var(--ink);font:700 14px var(--body);cursor:pointer;text-decoration:underline;padding:0;justify-self:start}
+.bn-dl{display:grid;gap:6px;justify-items:start;margin-top:4px}
+.bn-dl small{color:var(--muted);font-size:13px}
+.bn-dl .n{display:inline-block;font:700 12px var(--body);text-transform:uppercase;letter-spacing:.06em;background:var(--ink);color:#fff;border-radius:999px;padding:2px 9px}
+.bn-dl.off .n{background:var(--paper);color:var(--muted);border:1.6px solid var(--line)}
+.dl{display:grid;gap:6px;justify-items:start}
+.dl small{color:#cfd6c9;font-size:13px}
+.dl .n{display:inline-block;font:700 12px var(--body);text-transform:uppercase;letter-spacing:.06em;background:var(--lime);color:var(--ink);border-radius:999px;padding:2px 9px}
+.dl.off .n{background:#3b4a3e;color:#cfd6c9}
+</style>
+</head><body>
+
+<div class="wrap">
+  <header>
+    <a class="back" href="../">← Herramientas</a>
+    <h1>Variantes al <span>producto</span></h1>
+    <p class="lead">Sube el export de productos de Shopify y el xlsx con las combinaciones. Elige el producto, mira cómo quedarían las variantes y descarga un CSV listo para importar con solo ese producto. Si el producto es un bundle, también sale el CSV para asociar en Simple Bundles qué lleva cada variante. Nada se envía a Shopify desde aquí.</p>
+  </header>
+
+  <div class="pair">
+    <section class="card" aria-labelledby="t-exp">
+      <span class="eyebrow">Paso 1</span>
+      <h2 id="t-exp">Export de productos</h2>
+      <label class="drop" id="exp-drop"><b>Subir CSV</b><small id="exp-name">En Shopify: Productos › Exportar (todos o solo los seleccionados)</small><input type="file" id="exp-file" accept=".csv,text/csv"></label>
+      <div id="picker" hidden>
+        <div class="field">
+          <label for="q">Buscar producto</label>
+          <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input type="search" id="q" placeholder="Nombre, handle o SKU…" autocomplete="off"></div>
+        </div>
+        <div class="chips" id="st-chips" role="group" aria-label="Filtrar por estado" style="margin-top:10px"></div>
+        <div class="list" id="list" style="margin-top:10px" role="listbox" aria-label="Productos"></div>
+      </div>
+      <div class="picked" id="picked" hidden></div>
+      <p class="hint" id="exp-info"></p>
+    </section>
+
+    <section class="card" aria-labelledby="t-xl">
+      <span class="eyebrow">Paso 2</span>
+      <h2 id="t-xl">Combinaciones</h2>
+      <label class="drop" id="xl-drop"><b>Subir xlsx</b><small id="xl-name">Una fila por combinación, columnas Tarro 1, Tarro 2…</small><input type="file" id="xl-file" accept=".xlsx,.xls,.csv"></label>
+      <div class="cols" id="cols"></div>
+      <p class="hint" id="xl-info">Las columnas que digan "Tarro" o "Sabor" se juntan en una sola opción (Shopify permite máximo 3 opciones). Las demás columnas que cambian son otra opción; las que siempre tienen el mismo valor se ignoran.</p>
+    </section>
+  </div>
+
+  <section class="card off" id="set-card" aria-labelledby="t-set">
+    <span class="eyebrow">Paso 3</span>
+    <h2 id="t-set">Ajustes</h2>
+    <div class="row" id="opt-names"></div>
+    <div class="row">
+      <div class="field"><label for="price">Precio</label><input type="number" id="price" min="0" step="any"></div>
+      <div class="field"><label for="compare">Precio antes (tachado)</label><input type="number" id="compare" min="0" step="any"></div>
+      <div class="field"><label for="sku">Inicio del SKU</label><input type="text" id="sku" placeholder="Ej. COMB3-GOGO"></div>
+    </div>
+    <p class="hint">Todas las variantes llevan este precio. El SKU se arma con el inicio, las iniciales de cada sabor con su cantidad y las 3 primeras letras de las otras opciones (ej. COMB3-GOGO-LM2-FP1-BEI). Déjalo vacío si no quieres SKU.</p>
+  </section>
+
+  <section class="card off" id="prev-card" aria-labelledby="t-prev">
+    <span class="eyebrow">Vista previa</span>
+    <h2 id="t-prev">Así se vería en la tienda <small>toca las opciones como lo haría un cliente</small></h2>
+    <div class="seg" role="group" aria-label="Tamaño de pantalla">
+      <button type="button" data-view="pc" aria-pressed="true">PC</button>
+      <button type="button" data-view="mobile" aria-pressed="false">Celular</button>
+    </div>
+    <div class="stage pc" id="stage">
+      <div class="pdp" id="pdp">
+        <div class="pdp-img" id="pdp-img">Sin imagen</div>
+        <div class="pdp-info">
+          <div class="pdp-vendor" id="pdp-vendor">RUUTS</div>
+          <h3 class="pdp-title" id="pdp-title">Producto</h3>
+          <div class="pdp-price" id="pdp-price"></div>
+          <div id="pdp-opts"></div>
+          <button type="button" class="pdp-cta" id="pdp-cta" tabindex="-1">Añadir al carrito</button>
+          <div class="pdp-meta" id="pdp-meta"></div>
+          <div class="pdp-note"><span>Despacho al siguiente día hábil</span><span>Envío gratis desde $150.000</span></div>
+        </div>
+      </div>
+    </div>
+    <p class="hint">Está armada igual que el selector de tu tema (bloque "Elige el sabor de cada tarro", con los mismos colores y nombres de Configuración del tema › Sabores RUUTS). Si una mezcla de tarros no está en el xlsx, la tienda dice "Esa combinación no está disponible por ahora".</p>
+  </section>
+
+  <section class="summary" aria-live="polite">
+    <h2>Así va a quedar</h2>
+    <span class="status wait" id="status">Faltan archivos</span>
+    <p id="sum">Sube los dos archivos para ver las variantes.</p>
+    <ul class="msgs" id="msgs"></ul>
+    <div class="table" id="table" hidden></div>
+    <div class="dl"><span class="n">Paso 1</span><button class="btn" type="button" id="dl" disabled>Descargar CSV para Shopify</button><small>Súbelo en <b>Productos › Importar</b> marcando «Sobrescribir productos con el mismo handle». Las variantes que tenía el producto se reemplazan por estas; descripción, imágenes, etiquetas y estado quedan como están en el export.</small></div>
+    <ol class="steps">
+      <li>Importa este CSV en Shopify.</li>
+      <li>Si el producto es un bundle: exporta desde Simple Bundles, súbelo en el paso siguiente y descarga el <b>CSV 2</b> para la app.</li>
+    </ol>
+  </section>
+
+  <section class="card off" id="bn-card" aria-labelledby="t-bn">
+    <span class="eyebrow">Después de importar en Shopify · opcional</span>
+    <h2 id="t-bn">App de bundles <small>qué lleva cada variante</small></h2>
+    <p class="hint">Si el producto es un bundle en <b>Simple Bundles &amp; Kits</b>, aquí sale un segundo CSV que asocia cada variante con sus productos y cantidades. Ya con el CSV 1 importado en Shopify, en la app ve a <b>Bundles › Export</b> y sube ese archivo aquí: trae las variantes nuevas con su ID y los productos que ya usas en otros bundles.</p>
+    <label class="drop" id="bn-drop"><b>Subir export de la app</b><small id="bn-name">CSV que exporta Simple Bundles (columnas bundle_product_id, bundle_item_…)</small><input type="file" id="bn-file" accept=".csv,text/csv"></label>
+    <div id="bn-body" hidden>
+      <div class="field" id="bn-prod-f" hidden><label for="bn-prod">Bundle en la app</label><select id="bn-prod"></select></div>
+      <p class="hint" id="bn-info"></p>
+      <div class="comps" id="bn-comps"></div>
+      <button type="button" class="mini" id="bn-add">+ Agregar componente</button>
+      <p class="hint">Cada fila es algo que va dentro del bundle. «Según Sabor» pone la variante de ese sabor con la cantidad de tarros que tenga la combinación; «Según Color del shaker» pone la variante del color elegido.</p>
+      <div class="bsum" id="bn-sum" hidden></div>
+      <ul class="msgs" id="bn-msgs"></ul>
+      <button type="button" class="toggle" id="bn-toggle" hidden>Ver qué lleva cada variante</button>
+      <div class="table" id="bn-table" hidden></div>
+      <div class="bn-dl off" id="dl2-box"><span class="n">Paso 2</span><button class="btn" type="button" id="dl2" disabled>Descargar CSV para la app de bundles</button><small id="dl2-hint">Se activa cuando subas el export de Simple Bundles.</small></div>
+    </div>
+  </section>
+
+  <footer>Usa un export reciente: el CSV toma del export todo lo que no son variantes, así que si cambiaste el producto en Shopify después de exportar, vuelve a exportar. El inventario no se toca: las variantes nuevas quedan en 0.</footer>
+</div>
+
+<script>
+(function(){
+  function $(id){return document.getElementById(id);}
+  var exp=null, xl=null, out=null, picked=null, stFilter='all', variants=[], names=[], sel=[];
+  var bn=null, comps=[], out2=null, bnOpen=false;
+  var STATUS={active:'Activo',draft:'Borrador',archived:'Archivado'};
+
+  /* CSV con comillas y saltos de línea dentro de los campos */
+  function parseCSV(t){
+    if(t.charCodeAt(0)===0xFEFF) t=t.slice(1);
+    var rows=[], row=[], f='', q=false, i=0, c;
+    for(;i<t.length;i++){ c=t[i];
+      if(q){ if(c==='"'){ if(t[i+1]==='"'){ f+='"'; i++; } else q=false; } else f+=c; }
+      else if(c==='"') q=true;
+      else if(c===','){ row.push(f); f=''; }
+      else if(c==='\n'||c==='\r'){ if(c==='\r'&&t[i+1]==='\n') i++; row.push(f); rows.push(row); row=[]; f=''; }
+      else f+=c; }
+    if(f!==''||row.length){ row.push(f); rows.push(row); }
+    return rows.filter(function(r){ return r.some(function(v){return v!=='';}); });
+  }
+  function toCSV(rows){
+    return rows.map(function(r){ return r.map(function(v){ v=v==null?'':String(v); return /[",\r\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; }).join(','); }).join('\r\n')+'\r\n';
+  }
+  function txt(v){ return v==null?'':String(v).trim(); }
+  function norm(s){ return txt(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''); }
+  function initials(s){ return s.normalize('NFD').replace(/[̀-ͯ]/g,'').split(/[^A-Za-z0-9]+/).filter(Boolean).map(function(w){return w[0];}).join('').toUpperCase(); }
+  function short3(s){ return s.normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^A-Za-z0-9]/g,'').slice(0,3).toUpperCase(); }
+  function fmtMoney(v){ var n=Number(v); return isNaN(n)||v===''?'—':'$'+n.toLocaleString('es-CO',{maximumFractionDigits:2}); }
+  function el(tag,cls,text){ var e=document.createElement(tag); if(cls) e.className=cls; if(text!=null) e.textContent=text; return e; }
+
+
+  /* La misma lista de sabores que Configuración del tema › Sabores RUUTS (nombre, palabras clave, color, nombre corto del selector) */
+  var SABORES=[
+    {n:'Lychee/mangostino',kw:['lychee','mangostino'],c:'#f7b6f6',lbl:'Lychee',o:0},
+    {n:'Fruit Punch',kw:['fruit'],c:'#ff7d55',lbl:'Fruit Punch',o:1},
+    {n:'Oh my berry',kw:['berry'],c:'#de97ff',lbl:'Oh my berry',o:2},
+    {n:'Yellow Crush',kw:['yellow','crush'],c:'#ffda73',lbl:'Yellow Crush',o:3},
+    {n:'Crema',kw:['crema'],c:'#FDFBD4',o:4},
+    {n:'Cereza',kw:['cereza'],c:'#D2042D',o:5}
+  ];
+  var PAL=['#cdee5a','#8fd3f4','#ff9eb5','#9be3c3','#ffb86b','#b8a4ff','#f9e27d','#7fd1b9'];
+  function saborInfo(t){ var raw=String(t||'').replace(/^\s*\d+\s+/,'').trim(), tl=raw.toLowerCase();
+    for(var i=0;i<SABORES.length;i++){ for(var j=0;j<SABORES[i].kw.length;j++){ if(tl.indexOf(SABORES[i].kw[j])>=0) return {n:SABORES[i].n,c:SABORES[i].c,lbl:SABORES[i].lbl||SABORES[i].n,o:SABORES[i].o,m:true}; } }
+    return {n:raw,c:PAL[raw.length%PAL.length],lbl:raw,o:1000,m:false}; }
+  function canon(f){ return saborInfo(f).n; }
+  /* Color de una opción que no es sabor (como el snippet ruuts-color del tema): lista de sabores, luego nombre del color, luego automático */
+  function colorInfo(v){ var i=saborInfo(v); if(i.m) return i.c; var l=v.toLowerCase();
+    var T=[['crema|cream','#f3e7cc'],['cereza|vinotinto|vino','#a3122c'],['negro|black','#152018'],['blanco|white','#ffffff'],['rojo|red','#e72a26'],['rosa|pink|fucsia','#f196e4'],['verde|green|lima','#cdee5a'],['azul|blue','#3d6fd6'],['amarillo|yellow','#f7d84a'],['naranja|orange','#ff7d55'],['morado|lila|purple','#9b6ad6'],['gris|gray|grey','#9a9c98'],['beige|arena','#e6d9bf'],['café|cafe|marr|brown','#7a4a2a']];
+    for(var k=0;k<T.length;k++){ if(new RegExp(T[k][0]).test(l)) return T[k][1]; } return PAL[v.length%PAL.length]; }
+
+  function readFile(input,cb,binary){
+    var f=input.files[0]; if(!f) return;
+    var r=new FileReader(); r.onload=function(){ cb(f,r.result); };
+    binary?r.readAsArrayBuffer(f):r.readAsText(f,'utf-8');
+  }
+
+  /* Paso 1: export */
+  $('exp-file').addEventListener('change',function(){ readFile(this,function(f,t){
+    var rows=parseCSV(t), h=rows[0]||[];
+    if(h.indexOf('Handle')<0||h.indexOf('Option1 Name')<0){ $('exp-info').className='hint bad'; $('exp-info').textContent='Este archivo no parece un export de productos de Shopify (no tiene las columnas Handle y Option1 Name).'; return; }
+    var idx={}; h.forEach(function(k,i){ idx[k]=i; });
+    var products=[], byHandle={};
+    rows.slice(1).forEach(function(r){ var hd=r[idx.Handle]; if(!hd) return;
+      if(!byHandle[hd]){ byHandle[hd]={handle:hd,rows:[],skus:[]}; products.push(byHandle[hd]); }
+      var p=byHandle[hd]; p.rows.push(r);
+      if(!p.title&&r[idx.Title]) p.title=r[idx.Title];
+      if(!p.img&&r[idx['Image Src']]) p.img=r[idx['Image Src']];
+      if(r[idx['Variant SKU']]) p.skus.push(r[idx['Variant SKU']]); });
+    products.forEach(function(p){ var r=p.rows[0];
+      p.status=(r[idx.Status]||'').toLowerCase()||'active';
+      p.vars=p.rows.filter(function(x){return x[idx['Option1 Value']];}).length;
+      p.price=r[idx['Variant Price']]||''; p.opt=r[idx['Option1 Value']]||'';
+      p.key=norm(p.title+' '+p.handle+' '+p.skus.join(' ')); });
+    products.sort(function(a,b){return (a.title||a.handle).localeCompare(b.title||b.handle,'es');});
+    exp={head:h,idx:idx,products:products};
+    picked=null; stFilter='all'; $('q').value='';
+    $('exp-drop').classList.add('ok'); $('exp-name').textContent=f.name+' · '+(products.length===1?'1 producto':products.length+' productos');
+    $('exp-info').className='hint';
+    if(products.length===1){ pick(products[0]); }
+    else { $('exp-info').textContent='Busca o filtra y toca el producto al que van las variantes.'; renderChips(); renderList(); $('picker').hidden=false; $('picked').hidden=true; $('q').focus(); }
+    build();
+  }); });
+
+  function renderChips(){
+    var box=$('st-chips'); box.innerHTML='';
+    var counts={all:exp.products.length};
+    exp.products.forEach(function(p){ counts[p.status]=(counts[p.status]||0)+1; });
+    [['all','Todos'],['active','Activos'],['draft','Borradores'],['archived','Archivados']].forEach(function(c){
+      if(c[0]!=='all'&&!counts[c[0]]) return;
+      var b=el('button','chip',c[1]); b.type='button'; b.setAttribute('aria-pressed',String(stFilter===c[0]));
+      b.appendChild(el('i',null,String(counts[c[0]]||0)));
+      b.addEventListener('click',function(){ stFilter=c[0]; renderChips(); renderList(); });
+      box.appendChild(b); });
+  }
+  function renderList(){
+    var box=$('list'); box.innerHTML='';
+    var q=norm($('q').value), words=q.split(/\s+/).filter(Boolean);
+    var hits=exp.products.filter(function(p){ return (stFilter==='all'||p.status===stFilter) && words.every(function(w){return p.key.indexOf(w)>=0;}); });
+    if(!hits.length){ box.appendChild(el('div','empty','Nada con ese nombre'+(stFilter!=='all'?' en '+STATUS[stFilter].toLowerCase()+'s':'')+'. Prueba con otra palabra.')); return; }
+    hits.forEach(function(p){
+      var b=el('button','item'); b.type='button'; b.setAttribute('role','option'); b.setAttribute('aria-pressed',String(picked===p));
+      b.appendChild(thumb(p));
+      var mid=el('div'); var t=el('b'); hl(t,p.title||p.handle,words); mid.appendChild(t);
+      mid.appendChild(el('small',null,(p.vars===1&&p.opt==='Default Title'?'Sin variantes':p.vars+(p.vars===1?' variante':' variantes'))+' · '+fmtMoney(p.price)+' · '+p.handle));
+      b.appendChild(mid);
+      b.appendChild(el('span','st '+p.status,STATUS[p.status]||p.status));
+      b.addEventListener('click',function(){ pick(p); build(); });
+      box.appendChild(b); });
+  }
+  function thumb(p){ if(p.img){ var i=el('img','thumb'); i.src=p.img; i.alt=''; i.loading='lazy'; return i; } return el('div','thumb none','Sin foto'); }
+  function hl(node,text,words){
+    if(!words.length){ node.textContent=text; return; }
+    var low=norm(text), i=0, m;
+    while(i<text.length){
+      var best=-1,len=0; words.forEach(function(w){ var k=low.indexOf(w,i); if(k>=0&&(best<0||k<best)){best=k;len=w.length;} });
+      if(best<0){ node.appendChild(document.createTextNode(text.slice(i))); break; }
+      node.appendChild(document.createTextNode(text.slice(i,best))); node.appendChild(el('mark',null,text.slice(best,best+len))); i=best+len; }
+  }
+  $('q').addEventListener('input',renderList);
+  function pick(p){
+    picked=p; var r=p.rows[0], i=exp.idx;
+    $('price').value=r[i['Variant Price']]||''; $('compare').value=r[i['Variant Compare At Price']]||'';
+    var box=$('picked'); box.innerHTML=''; box.appendChild(thumb(p));
+    var d=el('div'); d.appendChild(el('b',null,p.title||p.handle));
+    d.appendChild(el('small',null,(STATUS[p.status]||p.status)+' · hoy tiene '+(p.vars===1&&p.opt==='Default Title'?'sin variantes':p.vars+(p.vars===1?' variante':' variantes')+' ('+p.opt+')')+' · '+fmtMoney(p.price)));
+    if(exp.products.length>1){ var c=el('button',null,'Cambiar producto'); c.type='button'; c.addEventListener('click',function(){ picked=null; $('picked').hidden=true; $('picker').hidden=false; renderList(); $('q').focus(); build(); }); d.appendChild(c); }
+    box.appendChild(d); box.hidden=false; $('picker').hidden=true;
+    $('exp-info').textContent=exp.products.length===1?'Un solo producto en el export: ya quedó elegido.':'';
+  }
+
+  /* Paso 2: xlsx */
+  $('xl-file').addEventListener('change',function(){ readFile(this,function(f,buf){
+    var aoa;
+    try{ var wb=XLSX.read(buf,{type:'array'}); aoa=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:''}); }
+    catch(e){ xl=null; $('xl-info').className='hint bad'; $('xl-info').textContent='No pude leer el archivo. ¿Es un xlsx?'; build(); return; }
+    var hr=-1;
+    /* La fila de títulos: tiene varias celdas y alguna dice Tarro o Sabor (los títulos del documento, de una sola celda, no cuentan) */
+    for(var k=0;k<aoa.length;k++){ var filled=aoa[k].filter(function(v){return txt(v)!=='';});
+      if(filled.length>=2&&filled.some(function(v){return /tarro|sabor/i.test(txt(v));})){ hr=k; break; } }
+    if(hr<0){ xl=null; $('xl-info').className='hint bad'; $('xl-info').textContent='No encontré la fila de títulos: necesito columnas que digan "Tarro" o "Sabor".'; build(); return; }
+    var head=aoa[hr].map(txt), data=aoa.slice(hr+1).filter(function(r){ return r.some(function(v){return txt(v)!=='';}); });
+    var cols=head.map(function(name,c){
+      var vals=data.map(function(r){return txt(r[c]);}), uniq=vals.filter(function(v,i){return vals.indexOf(v)===i;});
+      var kind;
+      if(!name&&uniq.length<=1) kind='empty';
+      else if(/tarro|sabor/i.test(name)) kind='flavor';
+      else if(/^(n\.?\s*[º°o]?\.?|#|no\.?|item)$/i.test(name)||vals.every(function(v,i){return v===String(i+1);})) kind='skip';
+      else if(uniq.length>1) kind='opt';
+      else kind='const';
+      return {name:name,c:c,kind:kind,uniq:uniq};
+    }).filter(function(x){return x.kind!=='empty';});
+    xl={cols:cols,data:data};
+    var box=$('cols'); box.innerHTML='';
+    cols.forEach(function(x){ box.appendChild(el('span','tag '+(x.kind==='flavor'?'flavor':x.kind==='opt'?'opt':'skip'),
+      x.name+(x.kind==='flavor'?' · sabor':x.kind==='opt'?' · opción':x.kind==='const'?' · siempre '+(x.uniq[0]||'vacío'):' · se ignora'))); });
+    $('xl-drop').classList.add('ok'); $('xl-name').textContent=f.name+' · '+data.length+' filas';
+    $('xl-info').className='hint'; $('xl-info').textContent='Verde: se juntan como sabores. Rosado: opción aparte. Punteado: no se usa.';
+    var flav=cols.filter(function(x){return x.kind==='flavor';}).length, opts=cols.filter(function(x){return x.kind==='opt';});
+    $('opt-names').innerHTML='';
+    addName('Opción 1 (sabores)', 'Sabor');
+    opts.forEach(function(x,n){
+      /* Si los valores son colores (Crema, Cereza, Beige…), la opción se llama "Color…" para que el tema los pinte como círculos */
+      var isCol=x.uniq.every(function(v){ return !v||/crema|cream|cereza|vino|negro|black|blanco|white|rojo|red|rosa|pink|fucsia|verde|green|lima|azul|blue|amarillo|yellow|naranja|orange|morado|lila|purple|gris|gray|grey|beige|arena|caf|marr|brown/i.test(v); });
+      var nm=/color|colour|tono/i.test(x.name)?x.name:(isCol?'Color'+(/shaker/i.test(x.name)?' del shaker':''):x.name);
+      addName('Opción '+(n+2)+' ('+x.name+')', nm); });
+    sel=[]; picks=[]; build();
+  },true); });
+  function addName(lbl,val){ var d=el('div','field'), id='on'+$('opt-names').children.length;
+    var l=el('label',null,lbl); l.htmlFor=id; var i=el('input'); i.type='text'; i.id=id; i.value=val;
+    d.appendChild(l); d.appendChild(i); $('opt-names').appendChild(d); }
+  ['price','compare','sku'].forEach(function(id){ $(id).addEventListener('input',build); });
+  $('opt-names').addEventListener('input',build);
+
+  /* Arma las variantes, la vista previa y el CSV */
+  function build(){
+    var p=picked, msgs=[], st=$('status');
+    $('set-card').classList.toggle('off',!(p&&xl)); $('prev-card').classList.toggle('off',!(p&&xl)); $('bn-card').classList.toggle('off',!(p&&xl));
+    out=null; variants=[]; $('dl').disabled=true; $('table').hidden=true; $('msgs').innerHTML='';
+    if(!p||!xl){ st.className='status wait'; st.textContent='Faltan archivos'; $('sum').textContent=!exp?'Sube el export de productos.':!p?'Elige el producto.':'Sube el xlsx de combinaciones.'; renderPreview(); buildBundle(); return; }
+    var flav=xl.cols.filter(function(x){return x.kind==='flavor';}), opts=xl.cols.filter(function(x){return x.kind==='opt';});
+    names=[].map.call($('opt-names').querySelectorAll('input'),function(i){return i.value.trim();});
+    var order=[]; xl.data.forEach(function(r){ flav.forEach(function(x){ var v=txt(r[x.c]); if(v){ v=canon(v); if(order.indexOf(v)<0) order.push(v); } }); });
+    order.sort(function(a,b){ return saborInfo(a).o-saborInfo(b).o; });
+    var seen={}, dup=0, empty=0;
+    xl.data.forEach(function(r){
+      var cnt={}; flav.forEach(function(x){ var v=txt(r[x.c]); if(v){ v=canon(v); cnt[v]=(cnt[v]||0)+1; } });
+      var used=order.filter(function(f){return cnt[f];});
+      if(!used.length){ empty++; return; }
+      var v1=flav.length>1?used.map(function(f){return cnt[f]+' '+f;}).join(' - '):used[0];
+      var vals=[v1].concat(opts.map(function(x){return txt(r[x.c]);}));
+      var key=vals.join('\u0001'); if(seen[key]){ dup++; return; } seen[key]=1;
+      var pre=$('sku').value.trim();
+      var sku=pre?[pre].concat(used.map(function(f){return initials(f)+(flav.length>1?cnt[f]:'');})).concat(vals.slice(1).map(short3)).join('-'):'';
+      variants.push({vals:vals,sku:sku});
+    });
+    var nOpt=1+opts.length;
+    if(!flav.length) msgs.push(['bad','El xlsx no tiene columnas de sabor.']);
+    if(nOpt>3) msgs.push(['bad','Salen '+nOpt+' opciones y Shopify permite máximo 3. Quita columnas del xlsx o junta algunas.']);
+    if(variants.length>100) msgs.push(['bad','Salen '+variants.length+' variantes. Shopify permite 100 por producto en la mayoría de tiendas (2048 solo con el nuevo modelo de variantes). Divide el xlsx en dos productos.']);
+    if(dup) msgs.push(['warn',dup+(dup===1?' fila repetida se quitó':' filas repetidas se quitaron')+' (mismos sabores en otro orden cuentan igual).']);
+    if(empty) msgs.push(['warn',empty+(empty===1?' fila sin sabores se ignoró.':' filas sin sabores se ignoraron.')]);
+    if(names.some(function(n){return !n;})) msgs.push(['bad','Ponle nombre a todas las opciones.']);
+    var skus=variants.map(function(v){return v.sku;}).filter(Boolean);
+    if(skus.length!==skus.filter(function(s,i){return skus.indexOf(s)===i;}).length) msgs.push(['warn','Hay SKU repetidos: dos sabores tienen las mismas iniciales o dos valores empiezan igual. Revisa la tabla.']);
+    if(!$('price').value) msgs.push(['bad','Falta el precio.']);
+    msgs.forEach(function(m){ $('msgs').appendChild(el('li',null,m[1])); });
+    var bad=msgs.some(function(m){return m[0]==='bad';});
+
+    renderTable(); renderPreview();
+
+    var price=$('price').value, cmp=$('compare').value;
+    $('sum').textContent=variants.length+' variantes con '+nOpt+(nOpt===1?' opción':' opciones')+' para «'+(p.title||p.handle)+'», a '+fmtMoney(price)+(cmp?' (antes '+fmtMoney(cmp)+')':'')+'.';
+    if(bad){ st.className='status bad'; st.textContent='Revisa esto'; buildBundle(); return; }
+    st.className='status live'; st.textContent='Listo para descargar';
+
+    /* CSV: fila del producto + una fila por variante + las filas de imágenes extra */
+    var H=exp.head, I=exp.idx, base=p.rows[0];
+    var isVar=function(k){ return /^Variant /.test(k)||/^Unit Price /.test(k)||k==='Cost per item'; };
+    var rows=[H.slice()];
+    variants.forEach(function(v,n){
+      var r=n===0?base.slice():H.map(function(k,c){ return isVar(k)?base[c]:''; });
+      if(n>0) r[I.Handle]=p.handle;
+      for(var o=1;o<=3;o++){
+        if(I['Option'+o+' Name']!=null) r[I['Option'+o+' Name']]=n===0&&names[o-1]?names[o-1]:'';
+        if(I['Option'+o+' Value']!=null) r[I['Option'+o+' Value']]=v.vals[o-1]||'';
+        if(I['Option'+o+' Linked To']!=null) r[I['Option'+o+' Linked To']]='';
+      }
+      if(I['Variant Image']!=null) r[I['Variant Image']]='';
+      r[I['Variant SKU']]=v.sku; r[I['Variant Price']]=price;
+      if(I['Variant Compare At Price']!=null) r[I['Variant Compare At Price']]=cmp;
+      rows.push(r);
+    });
+    p.rows.slice(1).forEach(function(r){ if(!r[I['Option1 Value']]&&r[I['Image Src']]){
+      rows.push(H.map(function(k,c){ return k==='Handle'||/^Image /.test(k)?r[c]:''; })); } });
+    out={rows:rows,name:'shopify-'+p.handle+'.csv'};
+    $('dl').disabled=false;
+    buildBundle();
+  }
+
+  function renderTable(){
+    var t=$('table'); t.innerHTML='';
+    if(!variants.length) return;
+    var tb=el('table'), thead=el('thead'), tr=el('tr'); tr.appendChild(el('th',null,'#'));
+    names.forEach(function(n,i){ tr.appendChild(el('th',null,n||('Opción '+(i+1)))); }); tr.appendChild(el('th',null,'SKU'));
+    thead.appendChild(tr); tb.appendChild(thead);
+    var body=el('tbody');
+    variants.forEach(function(v,i){ var r=el('tr'); r.id='v'+i;
+      r.appendChild(el('td','num',String(i+1)));
+      v.vals.forEach(function(x){ r.appendChild(el('td',null,x)); });
+      r.appendChild(el('td','sku',v.sku||'—')); body.appendChild(r); });
+    tb.appendChild(body); t.appendChild(tb); t.hidden=false;
+  }
+
+  /* Vista previa: la página de producto con las opciones como píldoras */
+  var picks=[];
+  function renderPreview(){
+    var p=picked, box=$('pdp-opts'); box.innerHTML='';
+    var img=$('pdp-img'); img.innerHTML='';
+    if(p&&p.img){ var i=el('img'); i.src=p.img; i.alt=''; img.appendChild(i); } else img.textContent='Sin imagen';
+    $('pdp-vendor').textContent=p?(p.rows[0][exp.idx.Vendor]||'RUUTS'):'RUUTS';
+    $('pdp-title').textContent=p?(p.title||p.handle):'Producto';
+    var price=$('price').value, cmp=$('compare').value, pr=$('pdp-price'); pr.innerHTML='';
+    pr.appendChild(el('span',null,fmtMoney(price)));
+    if(cmp&&Number(cmp)>Number(price)){ pr.appendChild(el('s',null,fmtMoney(cmp))); pr.appendChild(el('span','off',Math.round((1-price/cmp)*100)+'% OFF')); }
+    if(!variants.length){ $('pdp-cta').textContent='Añadir al carrito'; $('pdp-cta').className='pdp-cta'; $('pdp-meta').innerHTML=''; return; }
+    var nOpt=variants[0].vals.length, valuesBy=[];
+    for(var o=0;o<nOpt;o++){ valuesBy[o]=[]; variants.forEach(function(v){ if(valuesBy[o].indexOf(v.vals[o])<0) valuesBy[o].push(v.vals[o]); }); }
+    for(var o=1;o<nOpt;o++){ if(sel[o]==null||valuesBy[o].indexOf(sel[o])<0) sel[o]=valuesBy[o][0]; }
+    sel.length=nOpt;
+
+    /* Opción 1 como la arma el tema: si los valores son combos ("2 Lychee - 1 Fruit Punch"), un bloque por tarro con círculos */
+    var SEP=/\s+[-+]\s+/, titles=valuesBy[0], jars=0;
+    titles.forEach(function(t){ var sum=0; t.split(SEP).forEach(function(q){ var m=q.match(/^\s*(\d+)\s+/); if(m) sum+=parseInt(m[1],10); }); if(sum>jars) jars=sum; });
+    var combo=jars>=2;
+    var FL={}, flavs=[];
+    titles.forEach(function(t){ t.split(SEP).forEach(function(q){ var i=saborInfo(q); if(!FL[i.n]){ FL[i.n]=i; flavs.push(i.n); } }); });
+    flavs.sort(function(a,b){ return FL[a].o-FL[b].o; });
+    function sig(t){ var c={}; flavs.forEach(function(f){c[f]=0;}); var parts=t.split(SEP), any=parts.some(function(q){return /^\s*\d+\s+/.test(q);});
+      parts.forEach(function(q){ var m=q.match(/^\s*(\d+)\s+/), f=saborInfo(q).n; c[f]+=m?parseInt(m[1],10):(any?1:jars); }); return c; }
+    function key(c){ return flavs.map(function(f){return c[f]||0;}).join('-'); }
+    var MAP={}; titles.forEach(function(t){ MAP[key(sig(t))]=t; });
+
+    if(combo){
+      if(picks.length!==jars||picks.some(function(x){return !x||flavs.indexOf(x)<0;})){
+        picks=[]; var c0=sig(titles[0]); flavs.forEach(function(f){ for(var k=0;k<c0[f];k++) picks.push(f); }); picks.length=jars; }
+      var c={}; flavs.forEach(function(f){c[f]=0;}); picks.forEach(function(f){ if(f) c[f]++; });
+      sel[0]=picks.every(Boolean)?(MAP[key(c)]||null):null;
+      var wrap=el('div','pdp-opt');
+      wrap.appendChild(el('div','rcp-t','Elige el sabor de cada tarro'));
+      wrap.appendChild(el('div','rcp-s','Puedes repetir o combinar como quieras.'));
+      var ORD=['Primer','Segundo','Tercer','Cuarto','Quinto','Sexto'];
+      for(var j=0;j<jars;j++){ (function(j){
+        var d=el('div','rcp-jar'), h=el('div','rcp-jh'); h.appendChild(el('span','rcp-jn',String(j+1))); h.appendChild(document.createTextNode((ORD[j]?ORD[j]+' tarro':'Tarro '+(j+1))));
+        h.appendChild(el('span','rcp-pick',picks[j]?FL[picks[j]].lbl:'elige')); d.appendChild(h);
+        var fl=el('div','rcp-fl');
+        flavs.forEach(function(f){ var b=el('button','rcp-b'); b.type='button'; b.setAttribute('aria-pressed',String(picks[j]===f));
+          var cc=el('span','rcp-c'); cc.style.background=FL[f].c; b.appendChild(cc); b.appendChild(el('span','rcp-nm',FL[f].lbl));
+          b.addEventListener('click',function(){ picks[j]=f; renderPreview(); }); fl.appendChild(b); });
+        d.appendChild(fl); wrap.appendChild(d); })(j); }
+      /* Las demás opciones (ej. "Color del shaker") entran como un paso más, con círculos, igual que en el tema */
+      var extra=[];
+      for(var o=1;o<nOpt;o++){ (function(o){
+        var nm=names[o]||('Opción '+(o+1)), isColor=/color|colour|tono/i.test(nm);
+        var d=el('div','rcp-jar rcp-extra'), h=el('div','rcp-jh'); h.appendChild(el('span','rcp-jn',String(jars+o))); h.appendChild(document.createTextNode(nm));
+        h.appendChild(el('span','rcp-pick',sel[o]||'elige')); d.appendChild(h);
+        var fl=el('div','rcp-fl');
+        valuesBy[o].forEach(function(val){ var b=el('button','rcp-b'); b.type='button'; b.setAttribute('aria-pressed',String(sel[o]===val));
+          var cc=el('span','rcp-c'); cc.style.background=isColor?colorInfo(val):saborInfo(val).c; b.appendChild(cc); b.appendChild(el('span','rcp-nm',val));
+          b.addEventListener('click',function(){ sel[o]=val; renderPreview(); }); fl.appendChild(b); });
+        d.appendChild(fl); wrap.appendChild(d); if(sel[o]) extra.push(nm+': '+sel[o]); })(o); }
+      var sum=el('div','rcp-sum');
+      if(!picks.every(Boolean)) sum.textContent='';
+      else if(!sel[0]){ sum.textContent='Esa combinación no está disponible por ahora.'; sum.className='rcp-sum rcp-warn'; }
+      else sum.textContent='Tu combo: '+flavs.filter(function(f){return c[f];}).map(function(f){return c[f]+' × '+FL[f].lbl;}).join('  +  ')+(extra.length?'  ·  '+extra.join('  ·  '):'');
+      wrap.appendChild(sum); box.appendChild(wrap);
+    } else {
+      if(sel[0]==null||titles.indexOf(sel[0])<0) sel[0]=titles[0];
+      box.appendChild(optionBlock(0,titles,true));
+      /* Las demás opciones, como el tema: círculos si es un color, botones si no */
+      for(var o=1;o<nOpt;o++){ box.appendChild(optionBlock(o,valuesBy[o],false)); }
+    }
+
+    var hit=-1; variants.forEach(function(v,i){ if(hit<0&&v.vals.every(function(x,k){return x===sel[k];})) hit=i; });
+    var cta=$('pdp-cta'); cta.textContent=hit>=0?'Añadir al carrito':'No disponible'; cta.className='pdp-cta'+(hit>=0?'':' na');
+    var meta=$('pdp-meta'); meta.innerHTML='';
+    if(hit>=0){ meta.appendChild(el('span',null,'Variante '+(hit+1)+' de '+variants.length+' · '+variants[hit].vals.join(' / '))); if(variants[hit].sku){ var s=el('span',null,'SKU '); s.appendChild(el('code',null,variants[hit].sku)); meta.appendChild(s); } }
+    else meta.appendChild(el('span',null,'Esa combinación no está en el xlsx.'));
+    [].forEach.call(document.querySelectorAll('#table tr.hl'),function(r){r.classList.remove('hl');});
+    if(hit>=0){ var row=$('v'+hit); if(row) row.classList.add('hl'); }
+  }
+  function optionBlock(o,values,isFlavor){
+    var nm=names[o]||('Opción '+(o+1)), isColor=/color|colour|tono/i.test(nm)||isFlavor;
+    var g=el('div','pdp-opt'), l=el('div','lbl',nm+':'); if(isColor) l.appendChild(el('span',null,sel[o]||'')); g.appendChild(l);
+    var list=el('div',isColor?'rt-flavor-list':'pills');
+    var exists=function(vals){ return variants.some(function(v){ return v.vals.every(function(x,k){return x===vals[k];}); }); };
+    values.forEach(function(val){
+      var test=sel.slice(); test[o]=val; var ok=sel[0]?exists(test):true;
+      var b=el('button',isColor?'rcp-b':'pill'+(ok?'':' na')); b.type='button'; b.setAttribute('aria-pressed',String(sel[o]===val));
+      if(isColor){ var i=isFlavor?saborInfo(val):null, cc=el('span','rcp-c'); cc.style.background=i?i.c:colorInfo(val); b.appendChild(cc); b.appendChild(el('span','rcp-nm',i?i.lbl:val)); }
+      else b.textContent=val;
+      b.addEventListener('click',function(){ sel[o]=val; renderPreview(); }); list.appendChild(b); });
+    g.appendChild(list); return g;
+  }
+  [].forEach.call(document.querySelectorAll('.seg button'),function(b){ b.addEventListener('click',function(){
+    [].forEach.call(document.querySelectorAll('.seg button'),function(x){x.setAttribute('aria-pressed','false');}); b.setAttribute('aria-pressed','true');
+    $('stage').className='stage '+b.getAttribute('data-view'); }); });
+
+
+  /* Paso 4: export de Simple Bundles -> CSV 2 con lo que lleva cada variante */
+  var BN_COLS=['bundle_product_id','bundle_variant_id','bundle_product_title','bundle_variant_title','bundle_item_quantity','bundle_item_product_id','bundle_item_variant_id','bundle_item_product_title','bundle_item_variant_title'];
+  $('bn-file').addEventListener('change',function(){ readFile(this,function(f,t){
+    var rows=parseCSV(t), h=rows[0]||[];
+    if(BN_COLS.some(function(k){return h.indexOf(k)<0;})){ $('bn-info').className='hint bad'; $('bn-info').textContent='Este archivo no parece el export de Simple Bundles (faltan columnas bundle_…).'; $('bn-body').hidden=false; return; }
+    var idx={}; h.forEach(function(k,i){ idx[k]=i; });
+    var items=[], byV={}, prods={}, plist=[], bundles={}, blist=[];
+    rows.slice(1).forEach(function(r){
+      var pid=r[idx.bundle_product_id], vid=r[idx.bundle_variant_id];
+      if(pid){ if(!bundles[pid]){ bundles[pid]={pid:pid,title:r[idx.bundle_product_title],vars:[],byV:{}}; blist.push(bundles[pid]); }
+        var b=bundles[pid]; if(vid&&!b.byV[vid]){ b.byV[vid]={vid:vid,title:r[idx.bundle_variant_title],row:r}; b.vars.push(b.byV[vid]); } }
+      var ip=r[idx.bundle_item_product_id], iv=r[idx.bundle_item_variant_id];
+      if(iv&&!byV[iv]){ var it={pid:ip,vid:iv,ptitle:r[idx.bundle_item_product_title],vtitle:r[idx.bundle_item_variant_title]||'',sku:r[idx.bundle_item_variant_sku]||'',row:r};
+        byV[iv]=it; items.push(it);
+        if(!prods[ip]){ prods[ip]={pid:ip,title:it.ptitle,items:[]}; plist.push(prods[ip]); } prods[ip].items.push(it); } });
+    plist.sort(function(a,b){return a.title.localeCompare(b.title,'es');});
+    bn={head:h,idx:idx,items:items,byV:byV,prods:prods,plist:plist,bundles:bundles,blist:blist,chosen:null,file:f.name};
+    $('bn-drop').classList.add('ok'); $('bn-name').textContent=f.name+' · '+blist.length+' bundles · '+items.length+' productos para asociar';
+    $('bn-info').className='hint'; $('bn-body').hidden=false;
+    comps=null; /* se vuelven a sugerir */
+    buildBundle();
+  }); });
+  $('bn-prod').addEventListener('change',function(){ bn.chosen=this.value||null; buildBundle(); });
+  $('bn-add').addEventListener('click',function(){ if(!bn) return; comps=comps||[]; var pr=bn.plist[0]; comps.push({pid:pr?pr.pid:'',mode:'fixed',vid:pr?pr.items[0].vid:'',qty:1,map:{}}); buildBundle(); });
+  $('bn-toggle').addEventListener('click',function(){ bnOpen=!bnOpen; buildBundle(); });
+
+  function words(s){ return norm(s).split(/[^a-z0-9]+/).filter(function(w){return w.length>=3&&['ruuts','unidades','unidad','regalo','gratis','con','para','por','las','los','del'].indexOf(w)<0;}); }
+  /* Busca el producto del export de la app que más se parece a un trozo del título ("2 unidades GOGO RUUTS") */
+  function guessProduct(seg){ var ws=words(seg), best=null, bs=0;
+    bn.plist.forEach(function(pr){ var pw=words(pr.title), sc=0; ws.forEach(function(w){ if(pw.some(function(x){return x.indexOf(w)===0||w.indexOf(x)===0;})) sc++; });
+      /* Entre varios parecidos ("Shaker RUUTS", "Shaker Antigrumos"), gana el que tenga variantes para alguna opción (los colores del shaker) */
+      if(sc&&pr.items.length>1){ for(var o=0;o<names.length;o++){ var vals=o===0?flavorsUsed():valuesOf(o), m=autoMap(pr,vals,o===0); if(vals.length>1&&vals.every(function(v){return m[v];})){ sc+=.5; break; } } }
+      if(sc>bs){bs=sc;best=pr;} });
+    return bs?best:null; }
+  function valuesOf(o){ var v=[]; variants.forEach(function(x){ if(v.indexOf(x.vals[o])<0) v.push(x.vals[o]); }); return v; }
+  function flavorsUsed(){ var f=[]; variants.forEach(function(v){ v.vals[0].split(/\s+[-+]\s+/).forEach(function(q){ var n=saborInfo(q).n; if(f.indexOf(n)<0) f.push(n); }); }); return f; }
+  function autoMap(pr,vals,isFlavor){ var m={}; vals.forEach(function(val){ var hit=null;
+      pr.items.forEach(function(it){ if(hit) return; if(isFlavor){ if(saborInfo(it.vtitle).n===val||norm(it.vtitle)===norm(val)) hit=it; } else if(norm(it.vtitle)===norm(val)) hit=it; });
+      if(!hit&&!isFlavor){ var ours=colorInfo(val); pr.items.forEach(function(it){ if(!hit&&colorInfo(it.vtitle)===ours) hit=it; }); }
+      m[val]=hit?hit.vid:''; });
+    /* Si queda un solo valor sin pareja y una sola variante libre (Beige vs Crema), van juntos */
+    if(!isFlavor){ var miss=vals.filter(function(v){return !m[v];}), free=pr.items.filter(function(it){ return !vals.some(function(v){return m[v]===it.vid;}); });
+      if(miss.length===1&&free.length===1) m[miss[0]]=free[0].vid; }
+    return m; }
+  /* Si en el export el bundle se llama igual que el producto elegido, lo toma; si no, lo pide */
+  function chosenBundle(){ if(!bn) return null; if(bn.chosen&&bn.bundles[bn.chosen]) return bn.bundles[bn.chosen];
+    var t=norm(picked.title||''), hit=bn.blist.filter(function(b){return norm(b.title)===t;})[0]; if(hit){ bn.chosen=hit.pid; return hit; } return null; }
+  function suggestComps(){ var list=[], jars=xl.cols.filter(function(x){return x.kind==='flavor';}).length, fl=flavorsUsed();
+    var segs=(picked.title||'').split(/\s*\+\s*|\s+y\s+/); var used={};
+    segs.forEach(function(seg){ var m=seg.match(/^\s*(\d+)\s*(?:unidades?|uds?\.?|x)?\s*(.*)/i), qty=m?parseInt(m[1],10):1, nm=(m?m[2]:seg).replace(/\s+[—–-]\s.*$/,'');
+      var pr=guessProduct(nm||seg); if(!pr||used[pr.pid]) return; used[pr.pid]=1;
+      var c={pid:pr.pid,mode:'fixed',vid:pr.items[0].vid,qty:qty,map:{}};
+      var fm=autoMap(pr,fl,true), fok=fl.filter(function(f){return fm[f];}).length;
+      if(jars>1&&fok>=Math.min(2,fl.length)){ c.mode=0; c.qty=1; c.map=fm; }
+      else { for(var o=1;o<names.length;o++){ var vals=valuesOf(o), mm=autoMap(pr,vals,false); if(vals.length>1&&vals.filter(function(v){return mm[v];}).length===vals.length){ c.mode=o; c.qty=1; c.map=mm; break; } } }
+      list.push(c); });
+    return list; }
+  function sigKey(t){ var c={}; String(t).split(/\s+[-+]\s+/).forEach(function(q){ var m=q.match(/^\s*(\d+)\s+/), f=saborInfo(q).n; c[f]=(c[f]||0)+(m?parseInt(m[1],10):1); }); return Object.keys(c).sort().map(function(f){return c[f]+'·'+f;}).join('|'); }
+
+  function buildBundle(){
+    var box=$('bn-comps'), sum=$('bn-sum'), msgs=$('bn-msgs'), tbl=$('bn-table'), tg=$('bn-toggle'), b2=$('dl2'), hint=$('dl2-hint');
+    out2=null; b2.disabled=true; $('dl2-box').classList.add('off'); sum.hidden=true; sum.innerHTML=''; msgs.innerHTML=''; tbl.hidden=true; tbl.innerHTML=''; tg.hidden=true; box.innerHTML='';
+    hint.textContent='Se activa cuando subas el export de Simple Bundles.';
+    if(!bn||!picked||!xl||!variants.length) return;
+    /* Bundle elegido */
+    var sel2=$('bn-prod'); sel2.innerHTML=''; var o0=el('option',null,'— elige el bundle —'); o0.value=''; sel2.appendChild(o0);
+    bn.blist.forEach(function(b){ var o=el('option',null,b.title+' ('+b.vars.length+' variantes)'); o.value=b.pid; sel2.appendChild(o); });
+    var B=chosenBundle(); sel2.value=B?B.pid:''; $('bn-prod-f').hidden=!!B&&norm(B.title)===norm(picked.title||'');
+    if(!B){ $('bn-info').className='hint bad'; $('bn-info').textContent='En este export no hay un bundle que se llame «'+(picked.title||picked.handle)+'». Si ya importaste el CSV 1 y el producto está en la app, elígelo arriba; si no, impórtalo primero y vuelve a exportar.'; hint.textContent='Falta elegir el bundle.'; return; }
+    $('bn-info').className='hint'; $('bn-info').textContent='Bundle «'+B.title+'» con '+B.vars.length+' variantes en la app. Abajo, qué lleva cada una:';
+    if(!comps) comps=suggestComps();
+    if(!comps.length) comps.push({pid:bn.plist[0]?bn.plist[0].pid:'',mode:'fixed',vid:bn.plist[0]?bn.plist[0].items[0].vid:'',qty:1,map:{}});
+
+    /* Filas de componentes */
+    comps.forEach(function(c,i){
+      var pr=bn.prods[c.pid], d=el('div','comp'), top=el('div','top');
+      var f1=el('div','field'), l1=el('label',null,'Producto'), s1=el('select'); l1.htmlFor=s1.id='cp'+i;
+      bn.plist.forEach(function(p){ var o=el('option',null,p.title); o.value=p.pid; s1.appendChild(o); }); s1.value=c.pid;
+      s1.addEventListener('change',function(){ c.pid=this.value; c.vid=bn.prods[c.pid].items[0].vid; c.map={}; if(c.mode!=='fixed'){ c.map=autoMap(bn.prods[c.pid],c.mode===0?flavorsUsed():valuesOf(c.mode),c.mode===0); } buildBundle(); });
+      f1.appendChild(l1); f1.appendChild(s1); top.appendChild(f1);
+      var f2=el('div','field md'), l2=el('label',null,'Variante'), s2=el('select'); l2.htmlFor=s2.id='cm'+i;
+      var oF=el('option',null,pr&&pr.items.length>1?'Una fija…':'Única ('+(pr?pr.items[0].vtitle:'')+')'); oF.value='fixed'; s2.appendChild(oF);
+      names.forEach(function(n,o){ if(o===0&&xl.cols.filter(function(x){return x.kind==='flavor';}).length<2&&variants.length<2) return; var op=el('option',null,'Según '+(n||'Opción '+(o+1))); op.value=String(o); s2.appendChild(op); });
+      s2.value=c.mode==='fixed'?'fixed':String(c.mode);
+      s2.addEventListener('change',function(){ var v=this.value; if(v==='fixed'){ c.mode='fixed'; c.map={}; } else { c.mode=parseInt(v,10); c.map=autoMap(pr,c.mode===0?flavorsUsed():valuesOf(c.mode),c.mode===0); } buildBundle(); });
+      f2.appendChild(l2); f2.appendChild(s2); top.appendChild(f2);
+      if(c.mode==='fixed'&&pr&&pr.items.length>1){ var f3=el('div','field md'), l3=el('label',null,'Cuál'), s3=el('select'); l3.htmlFor=s3.id='cv'+i;
+        pr.items.forEach(function(it){ var o=el('option',null,it.vtitle+(it.sku?' · '+it.sku:'')); o.value=it.vid; s3.appendChild(o); }); s3.value=c.vid;
+        s3.addEventListener('change',function(){ c.vid=this.value; buildBundle(); }); f3.appendChild(l3); f3.appendChild(s3); top.appendChild(f3); }
+      var f4=el('div','field sm'), l4=el('label',null,c.mode===0?'× por tarro':'Cantidad'), q=el('input'); q.type='number'; q.min='1'; q.step='1'; q.value=c.qty; l4.htmlFor=q.id='cq'+i;
+      q.addEventListener('change',function(){ c.qty=Math.max(1,parseInt(this.value,10)||1); buildBundle(); }); f4.appendChild(l4); f4.appendChild(q); top.appendChild(f4);
+      var x=el('button','x','Quitar'); x.type='button'; x.addEventListener('click',function(){ comps.splice(i,1); buildBundle(); }); top.appendChild(x);
+      d.appendChild(top);
+      if(c.mode!=='fixed'&&pr){ var vals=c.mode===0?flavorsUsed():valuesOf(c.mode), miss=vals.filter(function(v){return !c.map[v];});
+        var det=el('details'), sm=el('summary',miss.length?'bad':'',miss.length?'Falta asociar '+miss.length+' de '+vals.length+' valores':vals.length+' valores asociados a variantes de «'+pr.title+'»'); det.appendChild(sm); if(miss.length) det.open=true;
+        var mp=el('div','map'); vals.forEach(function(val){ var lb=el('label',null,val+' →'), ss=el('select'); var on=el('option',null,'— sin variante —'); on.value=''; ss.appendChild(on);
+          pr.items.forEach(function(it){ var o=el('option',null,it.vtitle+(it.sku?' · '+it.sku:'')); o.value=it.vid; ss.appendChild(o); }); ss.value=c.map[val]||'';
+          ss.addEventListener('change',function(){ c.map[val]=this.value; buildBundle(); }); lb.appendChild(ss); mp.appendChild(lb); });
+        det.appendChild(mp); d.appendChild(det); }
+      box.appendChild(d); });
+
+    /* Empareja nuestras variantes con las del export (sabores por cantidad, lo demás por nombre; si un nombre cambió, por posición) */
+    var nOpt=names.length, ours=variants.map(function(v){ return {v:v,key:[sigKey(v.vals[0])].concat(v.vals.slice(1).map(norm)).join('/'),hit:null}; });
+    var theirs=B.vars.map(function(bv){ var parts=bv.title.split(' / '); var k=[sigKey(parts[0])].concat(parts.slice(1).map(norm)); return {bv:bv,parts:parts,key:k.join('/'),used:false}; });
+    var byKey={}; theirs.forEach(function(t){ byKey[t.key]=t; });
+    ours.forEach(function(o){ var t=byKey[o.key]; if(t&&!t.used){ o.hit=t; t.used=true; } });
+    var alias=[];
+    for(var o=1;o<nOpt;o++){ var ov=[], tv=[];
+      ours.forEach(function(x){ if(!x.hit&&ov.indexOf(x.v.vals[o])<0) ov.push(x.v.vals[o]); });
+      theirs.forEach(function(t){ if(!t.used&&tv.indexOf(t.parts[o])<0) tv.push(t.parts[o]); });
+      ov=ov.filter(function(v){ return !theirs.some(function(t){return norm(t.parts[o])===norm(v);}); }); tv=tv.filter(function(v){ return !ours.some(function(x){return norm(x.v.vals[o])===norm(v);}); });
+      if(ov.length&&ov.length===tv.length){ var al={}; ov.forEach(function(v,i){ al[norm(v)]=norm(tv[i]); alias.push(names[o]+': «'+v+'» en la app se llama «'+tv[i]+'»'); });
+        ours.forEach(function(x){ if(x.hit) return; var k=[sigKey(x.v.vals[0])].concat(x.v.vals.slice(1).map(function(val,i){ var n=norm(val); return i+1===o&&al[n]?al[n]:n; })).join('/'); var t=byKey[k]; if(t&&!t.used){ x.hit=t; t.used=true; } }); } }
+    var missing=ours.filter(function(x){return !x.hit;}), extraV=theirs.filter(function(t){return !t.used;});
+    var errs=[];
+    alias.forEach(function(a){ errs.push(['warn',a+'. Las asocié igual.']); });
+    if(missing.length) errs.push(['bad',missing.length+(missing.length===1?' variante del xlsx no está':' variantes del xlsx no están')+' en el export de la app ('+missing.slice(0,3).map(function(x){return x.v.vals.join(' / ');}).join('; ')+(missing.length>3?'…':'')+'). Importa el CSV 1 en Shopify y vuelve a exportar desde la app.']);
+    if(extraV.length) errs.push(['warn','La app tiene '+extraV.length+(extraV.length===1?' variante que no está':' variantes que no están')+' en el xlsx; esas no van en el CSV 2.']);
+    comps.forEach(function(c){ var pr=bn.prods[c.pid]; if(!pr){ errs.push(['bad','Hay un componente sin producto.']); return; }
+      if(c.mode!=='fixed'){ var vals=c.mode===0?flavorsUsed():valuesOf(c.mode), miss=vals.filter(function(v){return !c.map[v];}); if(miss.length) errs.push(['bad','«'+pr.title+'»: falta la variante para '+miss.join(', ')+'.']); } });
+    var dupP={}; comps.forEach(function(c){ dupP[c.pid]=(dupP[c.pid]||0)+1; });
+    errs.forEach(function(m){ msgs.appendChild(el('li',null,m[1])); });
+    var bad=errs.some(function(m){return m[0]==='bad';});
+
+    /* Filas del CSV 2 y detalle por variante */
+    var H=bn.head, I=bn.idx, rows=[H.slice()], detail=[];
+    ours.forEach(function(x){ if(!x.hit) return; var bv=x.hit.bv, lines=[];
+      var cnt={}; x.v.vals[0].split(/\s+[-+]\s+/).forEach(function(q){ var m=q.match(/^\s*(\d+)\s+/), f=saborInfo(q).n; cnt[f]=(cnt[f]||0)+(m?parseInt(m[1],10):1); });
+      comps.forEach(function(c){ var pr=bn.prods[c.pid]; if(!pr) return;
+        var list=[]; if(c.mode==='fixed') list.push([c.vid,c.qty]);
+        else if(c.mode===0){ Object.keys(cnt).forEach(function(f){ if(c.map[f]) list.push([c.map[f],cnt[f]*c.qty]); }); }
+        else { var val=x.v.vals[c.mode]; if(c.map[val]) list.push([c.map[val],c.qty]); }
+        list.forEach(function(e){ var it=bn.byV[e[0]]; if(!it) return;
+          var r=H.map(function(k,ci){ return /^bundle_item_/.test(k)?it.row[ci]:(/^bundle_/.test(k)?bv.row[ci]:''); });
+          r[I.bundle_item_quantity]=String(e[1]); if(I.bundle_type!=null) r[I.bundle_type]=bv.row[I.bundle_type]||'Simple Bundle'; if(I.sync_price!=null) r[I.sync_price]=bv.row[I.sync_price]||'FALSE';
+          if(I.bundle_discount_percentage!=null) r[I.bundle_discount_percentage]='0'; if(I.infinite_option_names!=null) r[I.infinite_option_names]=''; if(I.infinite_option_values!=null) r[I.infinite_option_values]='';
+          rows.push(r); lines.push(e[1]+' × '+it.ptitle.replace(/\s+[—–-].*$/,'')+(it.vtitle&&it.vtitle!=='Default Title'?' '+it.vtitle:'')); }); });
+      detail.push({t:x.v.vals.join(' / '),id:bv.vid,lines:lines}); });
+
+    /* Resumen comprimido + detalle */
+    sum.hidden=false; sum.appendChild(el('b',null,'Bundle: '));
+    comps.forEach(function(c){ var pr=bn.prods[c.pid]; if(!pr) return; var t=pr.title.replace(/\s+[—–-].*$/,'');
+      sum.appendChild(el('span','tag',c.mode==='fixed'?c.qty+' × '+t+(pr.items.length>1?' '+(bn.byV[c.vid]||{}).vtitle:''):(c.mode===0?t+' según '+names[0]+(c.qty>1?' ×'+c.qty:''):c.qty+' × '+t+' según '+names[c.mode]))); });
+    sum.appendChild(el('span',null,'→ '+(rows.length-1)+' filas para '+detail.length+' variantes'));
+    tg.hidden=false; tg.textContent=bnOpen?'Ocultar el detalle':'Ver qué lleva cada variante';
+    if(bnOpen&&detail.length){ var tb=el('table'), th=el('thead'), tr=el('tr'); ['#','Variante','Lleva','ID en la app'].forEach(function(h){tr.appendChild(el('th',null,h));}); th.appendChild(tr); tb.appendChild(th);
+      var body=el('tbody'); detail.forEach(function(d,i){ var r=el('tr'); r.appendChild(el('td','num',String(i+1))); r.appendChild(el('td',null,d.t)); r.appendChild(el('td',null,d.lines.join(' + '))); r.appendChild(el('td','sku',d.id)); body.appendChild(r); });
+      tb.appendChild(body); tbl.appendChild(tb); tbl.hidden=false; }
+    if(bad||rows.length<2){ hint.textContent='Revisa los avisos de arriba.'; return; }
+    out2={rows:rows,name:'bundle-'+picked.handle+'.csv'};
+    b2.disabled=false; $('dl2-box').classList.remove('off'); hint.textContent='Súbelo en Simple Bundles › Bundles › Import. '+(rows.length-1)+' filas: una por cada producto dentro de cada variante.';
+  }
+  function download(o){ var url=URL.createObjectURL(new Blob([toCSV(o.rows)],{type:'text/csv;charset=utf-8'}));
+    var a=document.createElement('a'); a.href=url; a.download=o.name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){URL.revokeObjectURL(url);},1000); }
+  $('dl2').addEventListener('click',function(){ if(out2) download(out2); });
+
+  $('dl').addEventListener('click',function(){ if(out) download(out); });
+
+  ['exp','xl','bn'].forEach(function(k){ var d=$(k+'-drop');
+    d.addEventListener('dragover',function(){d.classList.add('over');}); ['dragleave','drop'].forEach(function(e){ d.addEventListener(e,function(){d.classList.remove('over');}); }); });
+})();
+</script>
+</body></html>
