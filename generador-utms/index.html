@@ -1,0 +1,717 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Generador de UTMs RUUTS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Passion+One:wght@400;700&family=Fustat:wght@400;500;600;700;800&display=swap">
+<style>
+/* Layout: asistente de 4 pasos a la izquierda (un paso a la vez), link en construcción a la derecha (tarjeta oscura), historial abajo. Look único de marca (claro). */
+:root{
+  color-scheme: light;
+  --ink:#152018; --lime:#d2f25e; --lime-btn:#cdee5a; --lime-soft:#ecfca1;
+  --pink:#f196e4; --pink-soft:#F5CBF7; --red:#e23744; --paper:#fefffe; --bg:#f7f8f1;
+  --green:#2f7d4f; --muted:#5f6f60; --white:#ffffff; --line-soft:rgba(21,32,24,.18);
+  --head:'Passion One','Arial Black',Impact,sans-serif;
+  --body:'Fustat',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --mono:ui-monospace,'SFMono-Regular',Menlo,Consolas,monospace;
+  --b:2px solid var(--ink);
+  --sh-btn:3px 4px 0 0 var(--ink); --sh-card:5px 6px 0 0 var(--ink); --sh-pop:6px 6px 0 0 var(--pink);
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.45;margin:0}
+.wrap{max-width:1200px;margin:0 auto;padding-block:28px 60px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:26px}
+h1,h2,h3{font-family:var(--head);font-weight:700;text-transform:uppercase;line-height:.95;margin:0;text-wrap:balance}
+h1{font-size:clamp(34px,6vw,52px)}
+h2{font-size:clamp(24px,3.4vw,30px)}
+.hl{display:inline-block;background:var(--lime);padding:0 .14em;border-radius:.14em;transform:rotate(-1.5deg);box-shadow:2px 2px 0 var(--ink)}
+.eyebrow{display:inline-flex;align-items:center;gap:6px;font-weight:800;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--green)}
+.lead{color:var(--muted);max-width:62ch;margin:10px 0 0;font-size:16px}
+header{display:flex;flex-direction:column;gap:8px}
+
+/* Pasos */
+.stepper{display:flex;gap:8px;flex-wrap:wrap;list-style:none;margin:0;padding:0}
+.stepper button{font:800 13px/1 var(--body);color:var(--ink);background:var(--white);border:1.6px solid var(--ink);border-radius:999px;padding:7px 13px 7px 7px;display:inline-flex;align-items:center;gap:8px;cursor:pointer;transition:background .12s}
+.stepper button .n{width:22px;height:22px;border-radius:50%;border:1.6px solid var(--ink);display:grid;place-items:center;font-family:var(--head);font-size:14px;background:var(--white)}
+.stepper button[disabled]{cursor:default;opacity:.5}
+.stepper button.done .n{background:var(--lime)}
+.stepper button[aria-current=step]{background:var(--ink);color:var(--paper);box-shadow:2px 3px 0 0 var(--pink)}
+.stepper button[aria-current=step] .n{background:var(--lime);color:var(--ink);border-color:var(--paper)}
+.stepper button:not([disabled]):not([aria-current=step]):hover{background:var(--pink-soft)}
+.stepper .v{font-family:var(--mono);font-weight:500;font-size:11px;opacity:.75;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media (max-width:560px){.stepper .v{display:none}}
+
+.grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:28px;align-items:start}
+@media (max-width:899px){.grid{grid-template-columns:minmax(0,1fr)}}
+
+.card{background:var(--white);border:var(--b);border-radius:22px;box-shadow:var(--sh-card);padding:24px;min-width:0}
+.panel{display:flex;flex-direction:column;gap:18px}
+.panel-h{display:flex;align-items:flex-start;gap:12px}
+.num{flex:none;width:36px;height:36px;border-radius:50%;border:var(--b);background:var(--lime);box-shadow:2px 3px 0 0 var(--ink);display:grid;place-items:center;font-family:var(--head);font-size:21px}
+.panel-h h3{font-size:clamp(24px,3.2vw,30px)}
+.panel-h p{margin:6px 0 0;color:var(--muted);font-size:14.5px}
+.sub{font-weight:800;font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:0;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.sub code{font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:0;text-transform:none;color:var(--muted)}
+.req{color:var(--red)}
+.opt{color:var(--muted);font-weight:600;letter-spacing:.04em}
+
+input[type=text],input[type=url],input[type=search],select{width:100%;font:500 15px/1.3 var(--body);color:var(--ink);background:var(--paper);border:var(--b);border-radius:12px;padding:11px 13px;outline:none;transition:box-shadow .12s}
+select{appearance:none;-webkit-appearance:none;padding-right:38px;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23152018' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;background-size:16px}
+input:focus,select:focus{box-shadow:3px 3px 0 0 var(--lime)}
+input::placeholder{color:#8a968b}
+input.big{font-size:17px;padding:14px 15px;font-weight:600}
+input.invalid{border-color:var(--red);box-shadow:3px 3px 0 0 var(--pink-soft)}
+.field{display:flex;flex-direction:column;gap:7px;min-width:0}
+.hint{font-size:12.5px;color:var(--muted);margin:0}
+.hint b{color:var(--ink);font-family:var(--mono);font-weight:600;font-size:12px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:560px){.two{grid-template-columns:1fr}}
+
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font:700 13px/1 var(--body);background:var(--white);color:var(--ink);border:1.6px solid var(--ink);border-radius:999px;padding:9px 13px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;transition:background .12s}
+.chip:hover{background:var(--pink-soft)}
+.chip[aria-pressed=true],.chip[aria-pressed=true]:hover{background:var(--ink);color:var(--paper)}
+.chip .dot{width:9px;height:9px;border-radius:50%;background:var(--c,transparent);border:1.5px solid currentColor}
+.chip:focus-visible,.btn:focus-visible,.mini:focus-visible,.tpl:focus-visible,.stepper button:focus-visible{outline:3px solid var(--pink);outline-offset:2px}
+
+.tpls{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.tpl{text-align:left;font:inherit;color:var(--ink);background:var(--paper);border:1.8px solid var(--ink);border-radius:14px;padding:11px 12px;cursor:pointer;display:flex;flex-direction:column;gap:3px;transition:transform .1s,box-shadow .1s,background .12s}
+.tpl:hover{transform:translate(-2px,-2px);box-shadow:3px 4px 0 0 var(--ink)}
+.tpl strong{font-size:14px;font-weight:800}
+.tpl span{font-family:var(--mono);font-size:11px;color:var(--muted);overflow-wrap:anywhere}
+.tpl[aria-pressed=true]{background:var(--lime-soft);box-shadow:3px 4px 0 0 var(--ink)}
+.bubble{background:var(--pink-soft);border:1.6px solid var(--ink);border-radius:20px 20px 20px 6px;padding:11px 15px;font-size:14px;margin:0}
+.bubble:empty{display:none}
+.box{border:1.6px dashed var(--line-soft);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:14px}
+.check{display:inline-flex;gap:8px;align-items:center;font-weight:700;font-size:14px;cursor:pointer}
+.check input{width:18px;height:18px;accent-color:var(--ink)}
+details.adv summary{cursor:pointer;font-weight:800;font-size:13px;color:var(--muted)}
+details.adv[open] summary{margin-bottom:10px}
+
+.nav{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;border-top:2px dashed var(--line-soft);padding-top:18px}
+.nav .why{font-size:13px;color:var(--red);font-weight:700;flex:1 1 200px;margin:0}
+.nav .right{display:flex;gap:10px;margin-left:auto}
+
+.btn{font-family:var(--head);font-weight:700;font-size:19px;text-transform:uppercase;letter-spacing:.02em;background:var(--lime-btn);color:var(--ink);border:var(--b);border-radius:12px;box-shadow:var(--sh-btn);padding:12px 22px;cursor:pointer;display:inline-flex;justify-content:center;align-items:center;gap:8px;transition:transform .1s ease,box-shadow .1s ease}
+.btn:hover{transform:translate(2px,2px);box-shadow:1px 2px 0 0 var(--ink)}
+.btn:active{transform:translate(3px,4px);box-shadow:0 0 0 0 var(--ink)}
+.btn[disabled]{opacity:.45;cursor:not-allowed;transform:none;box-shadow:var(--sh-btn)}
+.btn.ghost{background:var(--paper)}
+.btn.link{background:none;border:0;box-shadow:none;font-family:var(--body);font-weight:800;font-size:14px;text-transform:none;text-decoration:underline;text-underline-offset:3px;padding:8px 4px}
+.btn.link:hover{transform:none}
+.btn svg{width:18px;height:18px;stroke:currentColor;stroke-width:2.6;fill:none;stroke-linecap:round;stroke-linejoin:round}
+@media (max-width:560px){.nav .right{width:100%}.nav .right .btn{flex:1}}
+
+/* Listo */
+.done-link{font-family:var(--mono);font-size:14px;line-height:1.55;background:var(--lime-soft);border:var(--b);border-radius:14px;padding:16px;overflow-wrap:anywhere;user-select:all}
+.done-actions{display:flex;flex-direction:column;gap:10px}
+.done-actions .btn{width:100%}
+.again{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+
+/* Resultado */
+.out{position:sticky;top:calc(env(safe-area-inset-top,0px) + 16px);background:var(--ink);color:var(--paper);border:var(--b);border-radius:22px;box-shadow:var(--sh-pop);padding:22px;display:flex;flex-direction:column;gap:16px;min-width:0}
+@media (max-width:899px){.out{position:static}}
+.out h2{color:var(--paper);font-size:24px}
+.out .eyebrow{color:var(--lime)}
+.final{font-family:var(--mono);font-size:13px;line-height:1.55;background:#22301f;border:1.6px solid rgba(254,255,254,.25);border-radius:14px;padding:14px;overflow-wrap:anywhere;word-break:break-word;min-height:70px}
+.final .p-base{color:#c9d3c9}
+.final .p-k{color:var(--pink)}
+.final .p-v{color:var(--lime)}
+.final .p-miss{color:#ffb4bb;font-style:italic}
+.final.empty{color:#8fa08f;font-family:var(--body)}
+.parts{display:grid;grid-template-columns:auto minmax(0,1fr);gap:7px 14px;font-size:13px;margin:0}
+.parts dt{font-family:var(--mono);color:var(--pink);font-size:12px;padding-top:1px}
+.parts dd{margin:0;font-weight:700;overflow-wrap:anywhere}
+.parts dd.none{color:#8fa08f;font-weight:500}
+.parts dd.miss{color:#ffb4bb;font-weight:600}
+.out .note{margin:0;font-size:13px;color:#c9d3c9}
+.meta-box{border-top:1.6px dashed rgba(254,255,254,.25);padding-top:14px;display:flex;flex-direction:column;gap:8px}
+.meta-box[hidden]{display:none}
+.meta-box p{margin:0;font-size:13px;color:#c9d3c9}
+.out .btn{border-color:var(--paper);box-shadow:3px 4px 0 0 var(--pink)}
+.out .btn:hover{box-shadow:1px 2px 0 0 var(--pink)}
+.out .btn.ghost{background:transparent;color:var(--paper)}
+
+.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 20px);transform:translate(-50%,20px);opacity:0;background:var(--lime);color:var(--ink);border:var(--b);border-radius:999px;box-shadow:var(--sh-btn);padding:10px 18px;font-weight:800;pointer-events:none;transition:opacity .2s,transform .25s cubic-bezier(.2,.9,.25,1.15);z-index:20;max-width:calc(100% - 32px);text-align:center}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+
+/* Historial */
+.hist-top{display:flex;flex-wrap:wrap;gap:12px;align-items:end;justify-content:space-between}
+.hist-top .tools{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.hist-top input{width:240px;max-width:100%}
+.mini{font:800 12px/1 var(--body);letter-spacing:.04em;background:var(--white);color:var(--ink);border:1.6px solid var(--ink);border-radius:10px;box-shadow:2px 3px 0 0 var(--ink);padding:8px 11px;cursor:pointer;transition:transform .1s,box-shadow .1s}
+.mini:hover{transform:translate(1px,1px);box-shadow:1px 1px 0 0 var(--ink)}
+.mini.danger{color:var(--red)}
+.tbl-wrap{overflow-x:auto;border:var(--b);border-radius:18px;background:var(--white);box-shadow:var(--sh-card)}
+table{border-collapse:collapse;width:100%;min-width:760px;font-size:13.5px}
+th{text-align:left;font-weight:800;font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:12px 14px;border-bottom:2px solid var(--ink);background:var(--lime-soft);white-space:nowrap}
+td{padding:11px 14px;border-bottom:1px solid var(--line-soft);vertical-align:top}
+tr:last-child td{border-bottom:0}
+td.date{white-space:nowrap;color:var(--muted);font-variant-numeric:tabular-nums}
+td .dest{font-family:var(--mono);font-size:12px;color:var(--muted);overflow-wrap:anywhere;display:block;max-width:300px}
+td .pill{display:inline-block;font-family:var(--mono);font-size:11.5px;background:var(--bg);border:1px solid var(--line-soft);border-radius:999px;padding:2px 8px;margin:0 4px 4px 0}
+td .pill.s{background:var(--pink-soft)}
+td .pill.m{background:var(--lime-soft)}
+td.acts{white-space:nowrap}
+td.acts .mini{box-shadow:none;padding:6px 9px}
+.empty-h{padding:28px;text-align:center;color:var(--muted)}
+.example-flag{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--red)}
+
+.rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
+.rule{background:var(--white);border:1.8px solid var(--ink);border-radius:18px;padding:16px 18px;display:flex;flex-direction:column;gap:6px}
+.rule h3{font-size:20px}
+.rule p{margin:0;color:var(--muted);font-size:14px}
+.rule code{font-family:var(--mono);font-size:12.5px;background:var(--lime-soft);padding:1px 6px;border-radius:6px;color:var(--ink)}
+
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head><body>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">✦ Herramientas RUUTS</span>
+    <h1>Generador de <span class="hl">UTMs</span></h1>
+    <p class="lead">Cuatro pasos y listo: a dónde va el clic, dónde lo publicas, qué campaña es y qué pieza. Así sabemos qué historia, qué correo o qué influencer trajo cada visita y cada venta 👀</p>
+  </header>
+
+  <ol class="stepper" id="stepper" aria-label="Pasos"></ol>
+
+  <div class="grid">
+    <form class="card" id="form" autocomplete="off" novalidate>
+
+      <!-- Paso 1 -->
+      <section class="panel" data-step="1">
+        <div class="panel-h"><span class="num">1</span><div><h3>¿A dónde va el clic?</h3><p>Pega el link de la página o elige una de las más usadas.</p></div></div>
+        <div class="field">
+          <label class="sub" for="url">Link de destino <span class="req">obligatorio</span></label>
+          <input type="url" class="big" id="url" inputmode="url" placeholder="https://ruuts.com.co/products/gogo-ruuts">
+          <p class="hint" id="urlHint"></p>
+        </div>
+        <div class="field">
+          <span class="sub">Atajos</span>
+          <div class="chips" id="pathChips"></div>
+        </div>
+      </section>
+
+      <!-- Paso 2 -->
+      <section class="panel" data-step="2" hidden>
+        <div class="panel-h"><span class="num">2</span><div><h3>¿Dónde lo vas a publicar?</h3><p>Elige el canal y te lleno la fuente y el medio. Si no está, usa “Otro canal”.</p></div></div>
+        <div class="tpls" id="tpls" role="group" aria-label="Canales"></div>
+        <p class="bubble" id="tplNote" aria-live="polite"></p>
+        <div class="box" id="smBox" hidden>
+          <div class="two">
+            <div class="field">
+              <label class="sub" for="sourceSel">Fuente <code>utm_source</code> <span class="req">obligatorio</span></label>
+              <select id="sourceSel"></select>
+              <input type="text" id="sourceOtra" placeholder="Escribe la fuente" hidden>
+              <p class="hint">La plataforma.</p>
+            </div>
+            <div class="field">
+              <label class="sub" for="mediumSel">Medio <code>utm_medium</code> <span class="req">obligatorio</span></label>
+              <select id="mediumSel"></select>
+              <input type="text" id="mediumOtra" placeholder="Escribe el medio" hidden>
+              <p class="hint">El formato dentro de la plataforma.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Paso 3 -->
+      <section class="panel" data-step="3" hidden>
+        <div class="panel-h"><span class="num">3</span><div><h3>¿Qué campaña es?</h3><p>Escribe el nombre o ármalo con los botones. Usa el mismo nombre en todos los canales de esta campaña para poder comparar.</p></div></div>
+        <div id="campMeta" class="bubble" hidden>En Meta Ads no tienes que escribir nada aquí: Meta pone el nombre de la campaña solo. Dale siguiente.</div>
+        <div id="campBox" class="panel">
+          <div class="field" id="reuseWrap" hidden>
+            <label class="sub" for="reuse">¿Es una campaña que ya usaste?</label>
+            <select id="reuse"><option value="">No, es nueva</option></select>
+          </div>
+          <div class="field">
+            <span class="sub">Producto</span>
+            <div class="chips" id="prodChips"></div>
+          </div>
+          <div class="field">
+            <span class="sub">Motivo</span>
+            <div class="chips" id="motChips"></div>
+            <input type="text" id="motOtro" placeholder="Escribe el motivo, ej. dia de la madre" hidden>
+          </div>
+          <label class="check"><input type="checkbox" id="addMes" checked> <span>Agregar el mes (<span id="mesTxt"></span>)</span></label>
+          <div class="field">
+            <label class="sub" for="campaign">Nombre de la campaña <code>utm_campaign</code> <span class="req">obligatorio</span></label>
+            <input type="text" class="big" id="campaign" placeholder="Ej. gogo-lanzamiento-oct26">
+            <p class="hint" id="campHint">Se guarda en minúscula y con guiones.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Paso 4 -->
+      <section class="panel" data-step="4" hidden>
+        <div class="panel-h"><span class="num">4</span><div><h3>¿Qué pieza es?</h3><p id="contentLead">Así sabes cuál de tus publicaciones trajo el clic.</p></div></div>
+        <div id="contentMeta" class="bubble" hidden>Meta pone aquí el nombre del anuncio. Nada que hacer, dale siguiente.</div>
+        <div id="contentBox" class="panel">
+          <div class="field">
+            <span class="sub" id="contentLbl">Contenido <code>utm_content</code></span>
+            <div class="chips" id="contentChips"></div>
+          </div>
+          <div class="field">
+            <label class="sub" for="content" id="contentInLbl">O escríbelo</label>
+            <input type="text" id="content" placeholder="Ej. historia-1">
+          </div>
+          <details class="adv">
+            <summary>Opciones avanzadas (término)</summary>
+            <div class="field">
+              <label class="sub" for="term">Término <code>utm_term</code> <span class="opt">opcional</span></label>
+              <input type="text" id="term" placeholder="Casi nunca se usa">
+            </div>
+          </details>
+        </div>
+      </section>
+
+      <!-- Listo -->
+      <section class="panel" data-step="5" hidden>
+        <div class="panel-h"><span class="num">✓</span><div><h3>¡Listo! Cópialo</h3><p>Al copiarlo queda guardado en el historial.</p></div></div>
+        <div class="done-link" id="doneLink"></div>
+        <div class="done-actions">
+          <button type="button" class="btn" id="copyDone">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg>
+            Copiar link
+          </button>
+        </div>
+        <span class="sub">¿Necesitas otro?</span>
+        <div class="again">
+          <button type="button" class="btn ghost" id="againPiece">Otra pieza, misma campaña</button>
+          <button type="button" class="btn ghost" id="againChannel">Otro canal, misma campaña</button>
+          <button type="button" class="btn ghost" id="againAll">Empezar de nuevo</button>
+        </div>
+      </section>
+
+      <div class="nav" id="nav">
+        <button type="button" class="btn link" id="back">Atrás</button>
+        <p class="why" id="why" aria-live="polite"></p>
+        <div class="right"><button type="button" class="btn" id="next">Siguiente</button></div>
+      </div>
+    </form>
+
+    <aside class="out" aria-labelledby="outTitle">
+      <span class="eyebrow">✦ Así va tu link</span>
+      <h2 id="outTitle">En construcción</h2>
+      <div class="final" id="final" aria-live="polite"></div>
+      <dl class="parts" id="parts"></dl>
+      <p class="note" id="outNote"></p>
+      <div class="meta-box" id="metaBox" hidden>
+        <p>En el anuncio de Meta pon el link limpio y pega esto en <b>Parámetros de URL</b>:</p>
+        <div class="final" id="metaParams"></div>
+        <button type="button" class="btn ghost" id="copyMeta">Copiar parámetros</button>
+      </div>
+    </aside>
+  </div>
+
+  <section style="display:flex;flex-direction:column;gap:14px">
+    <div class="hist-top">
+      <div>
+        <span class="eyebrow">✦ Lo que ya generaste</span>
+        <h2>Historial</h2>
+      </div>
+      <div class="tools">
+        <label class="sr" for="q">Buscar en el historial</label>
+        <input type="search" id="q" placeholder="Buscar campaña, fuente…">
+        <button type="button" class="mini" id="copySheet">Copiar para Sheets</button>
+        <button type="button" class="mini danger" id="clearAll">Borrar todo</button>
+      </div>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Fecha</th><th>Destino</th><th>Etiquetas</th><th>Campaña</th><th></th></tr></thead>
+        <tbody id="hist"></tbody>
+      </table>
+    </div>
+    <p class="hint">El historial vive en este navegador. Si cambias de computador o borras datos del navegador, no aparece; usa “Copiar para Sheets” para guardarlo afuera.</p>
+  </section>
+
+  <section style="display:flex;flex-direction:column;gap:14px">
+    <div>
+      <span class="eyebrow">✦ Para que los reportes no se vuelvan un caos</span>
+      <h2>Reglas de la casa</h2>
+    </div>
+    <div class="rules">
+      <div class="rule"><h3>Todo en minúscula</h3><p>Para Google Analytics <code>Instagram</code> e <code>instagram</code> son dos fuentes distintas. La herramienta lo corrige sola.</p></div>
+      <div class="rule"><h3>Guiones, sin tildes</h3><p>Espacios y tildes se cambian por guion: “Promo Día Madre” queda <code>promo-dia-madre</code>.</p></div>
+      <div class="rule"><h3>Fuente = plataforma</h3><p><code>instagram</code>, <code>tiktok</code>, <code>whatsapp</code>, <code>mailchimp</code>. Medio = formato: <code>historias</code>, <code>bio</code>, <code>email</code>.</p></div>
+      <div class="rule"><h3>Campaña = qué + cuándo</h3><p>Producto, motivo y mes: <code>gogo-lanzamiento-oct26</code>. La misma en todos los canales para comparar.</p></div>
+      <div class="rule"><h3>Nunca en links internos</h3><p>No pongas UTMs en botones o banners dentro de ruuts.com.co: reinician la visita y dañan los datos.</p></div>
+    </div>
+  </section>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+  var BASE = 'https://ruuts.com.co';
+  var KEY = 'ruuts-utm-historial-v1';
+  var KEYS = [['source','utm_source'],['medium','utm_medium'],['campaign','utm_campaign'],['content','utm_content'],['term','utm_term']];
+  var MONTHS = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  var NOW = new Date(); var MES = MONTHS[NOW.getMonth()] + String(NOW.getFullYear()).slice(2);
+
+  var PATHS = [['Inicio','/'],['Jugo verde','/products/jugo-verde-en-polvo-ruuts'],['GOGO','/products/gogo-ruuts'],['Refill 1 kg','/products/refill-ruuts-jugo-verde-en-polvo'],['Pocket','/products/pocket-ruuts-jugo-verde-en-polvo-lychee-mangostino'],['Combo 2 Jugo + GOGO','/products/combo-misterioso']];
+  var SOURCES = ['instagram','facebook','tiktok','whatsapp','mailchimp','youtube','google','pinterest'];
+  var MEDIUMS = ['historias','reel','post','bio','dm','chat','estados','email','influencer','paid-social','cpc','qr'];
+  var PRODUCTS = [['jugo-verde','#3aad4e'],['gogo','#fc2500'],['combo','#f196e4'],['refill','#d2f25e'],['pocket','#f7b6f6'],['tienda','#ffffff']];
+  var MOTIVOS = ['lanzamiento','promo','contenido','recompra','black-friday','navidad','otro'];
+
+  var TEMPLATES = [
+    {id:'ig-historias', name:'IG Historias', s:'instagram', m:'historias', contents:['historia-1','historia-2','historia-3','historia-4','historia-5'],
+      note:'Para el sticker de enlace. En el paso 4 eliges qué historia es (1, 2, 3…) y así ves cuál vendió.'},
+    {id:'ig-bio', name:'IG Bio', s:'instagram', m:'bio', contents:['link-bio','linktree'],
+      note:'Para el link de la bio o del Linktree.'},
+    {id:'ig-dm', name:'IG Mensajes', s:'instagram', m:'dm', contents:['respuesta-dm','comentario-reel','respuesta-historia'],
+      note:'Links que mandas por DM o en respuestas automáticas a comentarios de reels.'},
+    {id:'tiktok', name:'TikTok', s:'tiktok', m:'bio', contents:['link-bio'], note:'Link de la bio de TikTok.'},
+    {id:'facebook', name:'Facebook', s:'facebook', m:'post', contents:['post-1','post-2','historia-1'], note:'Publicaciones orgánicas en la página de Facebook.'},
+    {id:'wa-chat', name:'WhatsApp chat', s:'whatsapp', m:'chat', contents:['asesora','mensaje-masivo','respuesta-rapida'], note:'Links que se mandan por chat de WhatsApp.'},
+    {id:'wa-estados', name:'WhatsApp estados', s:'whatsapp', m:'estados', contents:['estado-1','estado-2','estado-3'], note:'Para links en los estados de WhatsApp Business.'},
+    {id:'email', name:'Email', s:'mailchimp', m:'email', contents:['boton-principal','imagen-principal','enlace-texto','boton-final'],
+      note:'Correos de Mailchimp. El medio “email” hace que Analytics lo cuente en el canal Email.'},
+    {id:'influencer', name:'Influencer', s:'instagram', m:'influencer', contents:[], needContent:true,
+      note:'En el paso 4 escribes el usuario del creador. Así comparas creadores dentro de la misma campaña.'},
+    {id:'meta-ads', name:'Meta Ads', s:'{{site_source_name}}', m:'paid-social', meta:true,
+      note:'Meta llena la fuente, la campaña y el anuncio solo, con los nombres que tengas en Ads Manager.'},
+    {id:'manual', name:'Otro canal', s:'', m:'', contents:[], note:'Elige la fuente y el medio en las listas. Si no está, escoge “Otra…” y escríbela.'}
+  ];
+
+  var $ = function(id){ return document.getElementById(id); };
+  function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  function norm(v){
+    v = (v||'').trim();
+    if(/^\{\{[a-z_.]+\}\}$/i.test(v)) return v;
+    return v.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase()
+      .replace(/[@#]/g,'').replace(/[\s_\/]+/g,'-').replace(/[^a-z0-9\-.]/g,'').replace(/-+/g,'-').replace(/^-|-$/g,'');
+  }
+  function enc(v){ return encodeURIComponent(v).replace(/%7B/g,'{').replace(/%7D/g,'}'); }
+  function store(k, v){ try{ if(v===undefined) return localStorage.getItem(k); localStorage.setItem(k, v); }catch(e){ return null; } }
+
+  var S = { step:1, maxStep:1, tpl:null, prod:'', mot:'', campAuto:true };
+
+  // ---------- URL ----------
+  function parseDest(raw){
+    raw = (raw||'').trim();
+    if(!raw) return {err:'empty'};
+    if(raw.charAt(0)==='/') raw = BASE + raw;
+    if(!/^[a-z][a-z0-9+.-]*:\/\//i.test(raw)) raw = 'https://' + raw;
+    try{ var u = new URL(raw); if(!/\./.test(u.hostname)) return {err:'bad'}; return {u:u}; }catch(e){ return {err:'bad'}; }
+  }
+  function build(dest, vals){
+    var p = parseDest(dest); if(p.err) return {err:p.err};
+    var u = p.u, removed = [], keep = [];
+    u.searchParams.forEach(function(v,k){ if(/^utm_/i.test(k)) removed.push(k); else keep.push(encodeURIComponent(k)+'='+encodeURIComponent(v)); });
+    var utm = [];
+    KEYS.forEach(function(k){ var v = vals[k[0]]; if(v) utm.push(k[1]+'='+enc(v)); });
+    var base = u.origin + u.pathname, all = keep.concat(utm);
+    return { url: base + (all.length ? '?'+all.join('&') : '') + u.hash, base:base, qs:keep, utm:utm, hash:u.hash, removed:removed, host:u.hostname, params:utm.join('&') };
+  }
+
+  // ---------- Selects con "Otra…" ----------
+  function fillSelect(sel, opts){
+    sel.innerHTML = '<option value="">Elige…</option>' + opts.map(function(o){ return '<option value="'+o+'">'+o+'</option>'; }).join('') + '<option value="__otra">Otra…</option>';
+  }
+  function selGet(name){ var s=$(name+'Sel'); return s.value==='__otra' ? norm($(name+'Otra').value) : s.value; }
+  function selSet(name, v){
+    var s=$(name+'Sel'), o=$(name+'Otra');
+    if(!v){ s.value=''; o.value=''; }
+    else if([].some.call(s.options, function(x){ return x.value===v; })){ s.value=v; o.value=''; }
+    else { s.value='__otra'; o.value=v; }
+    o.hidden = s.value!=='__otra';
+  }
+  fillSelect($('sourceSel'), SOURCES); fillSelect($('mediumSel'), MEDIUMS);
+  ['source','medium'].forEach(function(n){
+    $(n+'Sel').addEventListener('change', function(){ var o=$(n+'Otra'); o.hidden = this.value!=='__otra'; if(!o.hidden) o.focus(); update(); });
+    $(n+'Otra').addEventListener('input', update);
+  });
+
+  // ---------- Paso 1 ----------
+  $('pathChips').innerHTML = PATHS.map(function(p){ return '<button type="button" class="chip" data-path="'+p[1]+'">'+esc(p[0])+'</button>'; }).join('');
+  $('pathChips').addEventListener('click', function(e){ var b=e.target.closest('[data-path]'); if(!b) return; $('url').value = BASE + b.dataset.path; update(); });
+  $('url').addEventListener('input', update);
+
+  // ---------- Paso 2 ----------
+  TEMPLATES.forEach(function(t){
+    var b = document.createElement('button'); b.type='button'; b.className='tpl'; b.dataset.id=t.id; b.setAttribute('aria-pressed','false');
+    b.innerHTML = '<strong></strong><span></span>';
+    b.firstChild.textContent = t.name;
+    b.lastChild.textContent = t.id==='manual' ? 'tú eliges' : (t.meta ? 'automática' : t.s+' · '+t.m);
+    b.addEventListener('click', function(){ pickTpl(t.id); });
+    $('tpls').appendChild(b);
+  });
+  function tplObj(){ return TEMPLATES.filter(function(x){ return x.id===S.tpl; })[0] || null; }
+  function pickTpl(id){
+    var prev = tplObj();
+    S.tpl = id;
+    var t = tplObj();
+    [].forEach.call($('tpls').children, function(b){ b.setAttribute('aria-pressed', String(b.dataset.id===id)); });
+    $('tplNote').textContent = t ? t.note : '';
+    $('smBox').hidden = !t || t.meta;
+    if(t && !t.meta){ selSet('source', t.s); selSet('medium', t.m); }
+    // Al cambiar de canal se limpia la pieza; la campaña se conserva
+    if(!prev || prev.id!==id){ $('content').value=''; if(prev && prev.meta){ $('term').value=''; } }
+    renderContentChips();
+    update();
+  }
+
+  // ---------- Paso 3 ----------
+  $('mesTxt').textContent = MES;
+  $('prodChips').innerHTML = PRODUCTS.map(function(p){ return '<button type="button" class="chip" aria-pressed="false" data-prod="'+p[0]+'"><span class="dot" style="--c:'+p[1]+'"></span>'+p[0]+'</button>'; }).join('');
+  $('motChips').innerHTML = MOTIVOS.map(function(m){ return '<button type="button" class="chip" aria-pressed="false" data-mot="'+m+'">'+(m==='otro'?'otro…':m)+'</button>'; }).join('');
+  $('prodChips').addEventListener('click', function(e){ var b=e.target.closest('[data-prod]'); if(!b) return; S.prod = S.prod===b.dataset.prod ? '' : b.dataset.prod; S.campAuto=true; $('reuse').value=''; composeCamp(); });
+  $('motChips').addEventListener('click', function(e){
+    var b=e.target.closest('[data-mot]'); if(!b) return; S.mot = S.mot===b.dataset.mot ? '' : b.dataset.mot;
+    $('motOtro').hidden = S.mot!=='otro'; if(S.mot==='otro') $('motOtro').focus();
+    S.campAuto=true; $('reuse').value=''; composeCamp();
+  });
+  $('motOtro').addEventListener('input', function(){ S.campAuto=true; composeCamp(); });
+  $('addMes').addEventListener('change', function(){ S.campAuto=true; composeCamp(); });
+  $('campaign').addEventListener('input', function(){ S.campAuto=false; $('reuse').value=''; update(); });
+  $('campaign').addEventListener('blur', function(){ var n=norm(this.value); if(n!==this.value){ this.value=n; update(); } });
+  $('reuse').addEventListener('change', function(){ if(this.value){ $('campaign').value=this.value; S.campAuto=false; S.prod=''; S.mot=''; $('motOtro').hidden=true; } update(); });
+  function composeCamp(){
+    if(S.campAuto){
+      var parts = [];
+      if(S.prod) parts.push(S.prod);
+      var mot = S.mot==='otro' ? norm($('motOtro').value) : S.mot;
+      if(mot) parts.push(mot);
+      if(parts.length && $('addMes').checked) parts.push(MES);
+      $('campaign').value = parts.join('-');
+    }
+    update();
+  }
+
+  // ---------- Paso 4 ----------
+  function renderContentChips(){
+    var t = tplObj(); var list = t && t.contents ? t.contents : [];
+    $('contentChips').innerHTML = list.map(function(c){ return '<button type="button" class="chip" aria-pressed="false" data-c="'+c+'">'+c+'</button>'; }).join('');
+    $('contentChips').parentNode.hidden = !list.length;
+    var inf = t && t.needContent;
+    $('contentInLbl').innerHTML = inf ? 'Usuario del creador <span class="req">obligatorio</span>' : (list.length ? 'O escríbelo <span class="opt">opcional</span>' : 'Contenido <code>utm_content</code> <span class="opt">opcional</span>');
+    $('content').placeholder = inf ? 'Ej. lauraenforma (sin @)' : (list[0] ? 'Ej. '+list[0] : 'Ej. banner-octubre');
+    $('contentLead').textContent = inf ? 'Escribe quién publica, para comparar creadores.' : 'Así sabes cuál de tus publicaciones trajo el clic.';
+  }
+  $('contentChips').addEventListener('click', function(e){ var b=e.target.closest('[data-c]'); if(!b) return; $('content').value = $('content').value===b.dataset.c ? '' : b.dataset.c; update(); });
+  $('content').addEventListener('input', update);
+  $('content').addEventListener('blur', function(){ var n=norm(this.value); if(n!==this.value){ this.value=n; update(); } });
+  $('term').addEventListener('input', update);
+
+  // ---------- Valores y validación ----------
+  function vals(){
+    var t = tplObj();
+    if(t && t.meta) return {source:t.s, medium:t.m, campaign:'{{campaign.name}}', content:'{{ad.name}}', term:'{{adset.name}}'};
+    return {source:selGet('source'), medium:selGet('medium'), campaign:norm($('campaign').value), content:norm($('content').value), term:norm($('term').value)};
+  }
+  function problem(step){
+    var v = vals(), t = tplObj();
+    if(step===1){ var p=parseDest($('url').value); if(p.err==='empty') return 'Pega un link o elige un atajo.'; if(p.err) return 'Ese link no se ve bien. Revisa que esté completo.'; }
+    if(step===2){ if(!t) return 'Elige dónde lo vas a publicar.'; if(!v.source) return 'Falta elegir la fuente.'; if(!v.medium) return 'Falta elegir el medio.'; }
+    if(step===3){ if(!v.campaign) return 'Escribe el nombre de la campaña para seguir.'; }
+    if(step===4){ if(t && t.needContent && !v.content) return 'Escribe el usuario del creador.'; }
+    return '';
+  }
+  function firstProblemStep(){ for(var i=1;i<=4;i++){ if(problem(i)) return i; } return 5; }
+
+  // ---------- Pasos ----------
+  var STEP_NAMES = ['Link','Canal','Campaña','Pieza','Listo'];
+  function stepValue(i){
+    var v = vals(), t = tplObj();
+    if(i===1){ var p=parseDest($('url').value); return p.err ? '' : p.u.pathname.replace(/^\/products\//,'').replace(/^\/$/,'inicio'); }
+    if(i===2) return t ? t.name : '';
+    if(i===3) return t && t.meta ? 'automática' : v.campaign;
+    if(i===4) return t && t.meta ? 'automática' : v.content;
+    return '';
+  }
+  function renderStepper(){
+    var reach = Math.min(S.maxStep, firstProblemStep());
+    $('stepper').innerHTML = STEP_NAMES.map(function(n,idx){
+      var i = idx+1, cur = i===S.step, dis = i>reach && !cur, done = i<5 && !problem(i) && i<reach+1 && !cur;
+      var val = stepValue(i);
+      return '<li><button type="button" data-go="'+i+'"'+(cur?' aria-current="step"':'')+(dis?' disabled':'')+' class="'+(done?'done':'')+'"><span class="n">'+(i===5?'✓':i)+'</span>'+n+(val&&!cur?' <span class="v">'+esc(val)+'</span>':'')+'</button></li>';
+    }).join('');
+  }
+  $('stepper').addEventListener('click', function(e){ var b=e.target.closest('[data-go]'); if(!b||b.disabled) return; go(+b.dataset.go); });
+  var booted=false;
+  function go(n){
+    S.step = n; S.maxStep = Math.max(S.maxStep, n);
+    document.querySelectorAll('.panel[data-step]').forEach(function(p){ p.hidden = +p.dataset.step!==n; });
+    var t = tplObj(), meta = !!(t && t.meta);
+    $('campMeta').hidden = !meta; $('campBox').hidden = meta;
+    $('contentMeta').hidden = !meta; $('contentBox').hidden = meta;
+    if(n===3) fillReuse();
+    update();
+    var focusEl = {1:'url',3:meta?null:'campaign',4:meta?null:'content'}[n];
+    if(focusEl && window.matchMedia('(min-width:900px)').matches) $(focusEl).focus();
+    if(booted && !window.matchMedia('(min-width:900px)').matches) document.getElementById('stepper').scrollIntoView({behavior:'smooth',block:'start'});
+  }
+  $('next').addEventListener('click', function(){
+    var p = problem(S.step);
+    if(p){ $('why').textContent = p; var f={1:'url',3:'campaign',4:'content'}[S.step]; if(f){ $(f).classList.add('invalid'); $(f).focus(); } return; }
+    go(S.step+1);
+  });
+  $('back').addEventListener('click', function(){ if(S.step>1) go(S.step-1); });
+  $('form').addEventListener('submit', function(e){ e.preventDefault(); $('next').click(); });
+  document.querySelectorAll('#url,#campaign,#content').forEach(function(el){
+    el.addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); $('next').click(); } });
+  });
+
+  // ---------- Render ----------
+  var last = null;
+  function update(){
+    var v = vals(), t = tplObj();
+    var r = build($('url').value, v);
+    last = r.err ? null : r;
+    ['url','campaign','content'].forEach(function(id){ $(id).classList.remove('invalid'); });
+    $('why').textContent = '';
+
+    // Paso 1 hint
+    if(last){
+      var msgs = [];
+      if(last.host.replace(/^www\./,'')!=='ruuts.com.co') msgs.push('Ojo: este link no es de <b>ruuts.com.co</b>. Está bien si es a propósito.');
+      if(last.removed.length) msgs.push('Quité UTMs viejas que traía el link.');
+      $('urlHint').innerHTML = msgs.join(' ');
+    } else $('urlHint').textContent = '';
+
+    // Chips activos
+    [].forEach.call($('prodChips').children, function(b){ b.setAttribute('aria-pressed', String(b.dataset.prod===S.prod)); });
+    [].forEach.call($('motChips').children, function(b){ b.setAttribute('aria-pressed', String(b.dataset.mot===S.mot)); });
+    [].forEach.call($('contentChips').children, function(b){ b.setAttribute('aria-pressed', String(b.dataset.c===v.content)); });
+    var rawCamp = $('campaign').value.trim();
+    $('campHint').innerHTML = rawCamp && rawCamp!==v.campaign ? 'Se guarda como <b>'+esc(v.campaign)+'</b>' : 'Se guarda en minúscula y con guiones.';
+
+    // Vista previa
+    var fin = $('final');
+    if(!last){ fin.className='final empty'; fin.textContent='Aquí vas viendo cómo queda tu link mientras avanzas.'; }
+    else {
+      fin.className='final';
+      var segs = last.qs.map(function(q){ return '<span class="p-base">'+esc(q)+'</span>'; });
+      KEYS.slice(0,3).forEach(function(k){ if(!v[k[0]]) segs.push('<span class="p-miss">'+k[1]+'=¿?</span>'); });
+      segs = segs.concat(last.utm.map(function(q){ var i=q.indexOf('='); return '<span class="p-k">'+esc(q.slice(0,i))+'=</span><span class="p-v">'+esc(q.slice(i+1))+'</span>'; }));
+      fin.innerHTML = '<span class="p-base">'+esc(last.base)+'</span>' + (segs.length ? '<span class="p-base">?</span>'+segs.join('<span class="p-base">&amp;</span>') : '') + (last.hash?'<span class="p-base">'+esc(last.hash)+'</span>':'');
+    }
+    $('parts').innerHTML = KEYS.map(function(k, i){
+      var val = v[k[0]], req = i<3;
+      return '<dt>'+k[1]+'</dt><dd class="'+(val?'':(req?'miss':'none'))+'">'+(val?esc(val):(req?'falta':'vacío'))+'</dd>';
+    }).join('');
+    var complete = firstProblemStep()===5;
+    $('outTitle').textContent = complete && S.step===5 ? 'Listo para copiar' : 'En construcción';
+    $('outNote').textContent = t && t.meta ? 'Las llaves {{ }} las reemplaza Meta cuando alguien hace clic.' : '';
+    $('metaBox').hidden = !(t && t.meta && last);
+    if(t && t.meta && last) $('metaParams').textContent = last.params;
+
+    // Listo
+    if(S.step===5 && last) $('doneLink').textContent = last.url;
+
+    // Nav
+    $('nav').hidden = S.step===5;
+    $('back').style.visibility = S.step>1 ? 'visible' : 'hidden';
+    $('next').textContent = S.step===4 ? 'Ver mi link' : 'Siguiente';
+    renderStepper();
+  }
+
+  // ---------- Copiar ----------
+  function toast(t){ var el=$('toast'); el.textContent=t; el.classList.add('on'); clearTimeout(toast._t); toast._t=setTimeout(function(){ el.classList.remove('on'); }, 2000); }
+  function copy(text, el, okMsg){
+    function fallback(){
+      var range = document.createRange(); range.selectNodeContents(el);
+      var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
+      toast('Quedó seleccionado: copia con Ctrl+C o mantén presionado');
+    }
+    try{ if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(function(){ toast(okMsg); }, fallback); else fallback(); }catch(e){ fallback(); }
+  }
+  $('copyDone').addEventListener('click', function(){ if(!last) return; copy(last.url, $('doneLink'), '¡Copiado! Va pa’l historial 💚'); addHist(last, vals()); });
+  $('copyMeta').addEventListener('click', function(){ if(!last) return; copy(last.params, $('metaParams'), 'Parámetros copiados'); if(firstProblemStep()===5) addHist(last, vals()); });
+
+  function bump(c){ var m = /^(.*-)(\d+)$/.exec(c||''); return m ? m[1]+(+m[2]+1) : ''; }
+  $('againPiece').addEventListener('click', function(){ $('content').value = bump(norm($('content').value)); go(4); });
+  $('againChannel').addEventListener('click', function(){ var c=$('campaign').value; pickTpl(null); S.tpl=null; $('campaign').value=c; selSet('source',''); selSet('medium',''); $('smBox').hidden=true; $('tplNote').textContent=''; [].forEach.call($('tpls').children,function(b){b.setAttribute('aria-pressed','false');}); S.maxStep=2; go(2); });
+  $('againAll').addEventListener('click', reset);
+  function reset(){
+    ['url','campaign','content','term','motOtro'].forEach(function(id){ $(id).value=''; });
+    $('motOtro').hidden = true; $('addMes').checked = true;
+    S.prod=''; S.mot=''; S.campAuto=true; S.tpl=null; S.maxStep=1;
+    selSet('source',''); selSet('medium',''); $('smBox').hidden=true; $('tplNote').textContent='';
+    [].forEach.call($('tpls').children,function(b){b.setAttribute('aria-pressed','false');});
+    renderContentChips(); go(1);
+  }
+
+  // ---------- Historial ----------
+  function loadHist(){ try{ var r = store(KEY); return r ? JSON.parse(r) : null; }catch(e){ return null; } }
+  var hist = loadHist(), isExample = false;
+  if(!hist){
+    isExample = true; var day = 864e5;
+    hist = [
+      [1,'/products/gogo-ruuts','instagram','historias','gogo-lanzamiento-'+MES,'historia-2'],
+      [1,'/products/gogo-ruuts','instagram','historias','gogo-lanzamiento-'+MES,'historia-1'],
+      [4,'/products/combo-misterioso','mailchimp','email','combo-promo-'+MES,'boton-principal']
+    ].map(function(a){ var o={id:'ej'+a[0]+a[5], date:new Date(NOW - a[0]*day).toISOString(), dest:BASE+a[1], source:a[2], medium:a[3], campaign:a[4], content:a[5], term:'', example:true}; o.final = build(o.dest,o).url; return o; });
+  }
+  function persist(){ if(!isExample) store(KEY, JSON.stringify(hist)); }
+  function addHist(r, v){
+    if(isExample){ hist = []; isExample = false; }
+    hist = hist.filter(function(h){ return h.final !== r.url; });
+    hist.unshift({id:Date.now().toString(36), date:new Date().toISOString(), dest:r.base+(r.hash||''), final:r.url, source:v.source, medium:v.medium, campaign:v.campaign, content:v.content, term:v.term, tpl:S.tpl});
+    hist = hist.slice(0, 300); persist(); renderHist();
+  }
+  function fillReuse(){
+    var seen = {}, opts = [];
+    hist.forEach(function(h){ if(!h.example && h.campaign && !/^\{\{/.test(h.campaign) && !seen[h.campaign]){ seen[h.campaign]=1; opts.push(h.campaign); } });
+    $('reuseWrap').hidden = !opts.length;
+    var cur = $('reuse').value;
+    $('reuse').innerHTML = '<option value="">No, es nueva</option>' + opts.map(function(c){ return '<option value="'+esc(c)+'">'+esc(c)+'</option>'; }).join('');
+    $('reuse').value = opts.indexOf(cur)>-1 ? cur : '';
+  }
+  function fmtDate(iso){ var d=new Date(iso); return d.getDate()+' '+MONTHS[d.getMonth()]+' · '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
+  function renderHist(){
+    var q = norm($('q').value);
+    var rows = hist.filter(function(h){ return !q || [h.source,h.medium,h.campaign,h.content,h.dest].join(' ').indexOf(q)>-1; });
+    if(!rows.length){ $('hist').innerHTML = '<tr><td colspan="5" class="empty-h">'+(hist.length?'Nada coincide con esa búsqueda.':'Aún no hay links. Copia el primero y aparece aquí.')+'</td></tr>'; return; }
+    $('hist').innerHTML = rows.map(function(h){
+      return '<tr data-id="'+esc(h.id)+'">'+
+        '<td class="date">'+fmtDate(h.date)+(h.example?'<br><span class="example-flag">Ejemplo</span>':'')+'</td>'+
+        '<td><span class="dest">'+esc(h.dest.replace(/^https?:\/\/(www\.)?/,''))+'</span></td>'+
+        '<td><span class="pill s">'+esc(h.source||'—')+'</span><span class="pill m">'+esc(h.medium||'—')+'</span>'+(h.content?'<span class="pill">'+esc(h.content)+'</span>':'')+'</td>'+
+        '<td><b>'+esc(h.campaign||'—')+'</b></td>'+
+        '<td class="acts"><button type="button" class="mini" data-act="copy">Copiar</button> <button type="button" class="mini" data-act="load">Reusar</button> <button type="button" class="mini danger" data-act="del" aria-label="Borrar">✕</button></td></tr>';
+    }).join('');
+  }
+  $('hist').addEventListener('click', function(e){
+    var b = e.target.closest('button'); if(!b) return;
+    var id = b.closest('tr').dataset.id, h = hist.filter(function(x){return x.id===id;})[0]; if(!h) return;
+    if(b.dataset.act==='copy') copy(h.final, b.closest('tr').querySelector('.dest'), 'Link copiado');
+    if(b.dataset.act==='load'){
+      reset();
+      $('url').value = h.dest;
+      var tid = h.tpl && TEMPLATES.some(function(t){return t.id===h.tpl;}) ? h.tpl : 'manual';
+      pickTpl(tid);
+      if(tid!=='meta-ads'){ selSet('source', h.source); selSet('medium', h.medium); $('campaign').value=h.campaign; S.campAuto=false; $('content').value=h.content||''; $('term').value=h.term||''; }
+      S.maxStep = 5; go(4);
+      window.scrollTo({top:0,behavior:'smooth'}); toast('Cargado. Cambia la pieza y copia otro');
+    }
+    if(b.dataset.act==='del'){
+      if(b.dataset.confirm){ hist = hist.filter(function(x){return x.id!==id;}); persist(); renderHist(); }
+      else { b.dataset.confirm='1'; b.textContent='¿Seguro?'; setTimeout(function(){ if(b.isConnected){ b.textContent='✕'; delete b.dataset.confirm; } }, 2500); }
+    }
+  });
+  $('q').addEventListener('input', renderHist);
+  $('clearAll').addEventListener('click', function(){
+    var b=this; if(!hist.length) return;
+    if(b.dataset.confirm){ hist=[]; isExample=false; persist(); renderHist(); b.textContent='Borrar todo'; delete b.dataset.confirm; toast('Historial borrado'); }
+    else { b.dataset.confirm='1'; b.textContent='Toca otra vez para borrar'; setTimeout(function(){ b.textContent='Borrar todo'; delete b.dataset.confirm; }, 3000); }
+  });
+  $('copySheet').addEventListener('click', function(){
+    var head = ['fecha','destino','utm_source','utm_medium','utm_campaign','utm_content','utm_term','link_final'];
+    var txt = [head.join('\t')].concat(hist.map(function(h){ return [h.date.slice(0,10),h.dest,h.source,h.medium,h.campaign,h.content||'',h.term||'',h.final].join('\t'); })).join('\n');
+    var pre = document.createElement('pre'); pre.textContent = txt; pre.style.cssText='position:fixed;left:-9999px;top:0'; document.body.appendChild(pre);
+    copy(txt, pre, 'Copiado: pégalo en una hoja de Google Sheets');
+    setTimeout(function(){ pre.remove(); }, 4000);
+  });
+
+  renderContentChips(); renderHist(); go(1); booted=true;
+})();
+</script>
+
+</body></html>
