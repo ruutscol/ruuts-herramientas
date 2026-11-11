@@ -186,6 +186,23 @@ footer{font-size:13px;color:var(--muted)}
 .dl small{color:#cfd6c9;font-size:13px}
 .dl .n{display:inline-block;font:700 12px var(--body);text-transform:uppercase;letter-spacing:.06em;background:var(--lime);color:var(--ink);border-radius:999px;padding:2px 9px}
 .dl.off .n{background:#3b4a3e;color:#cfd6c9}
+
+/* Paso 2: armar las combinaciones desde los productos del export */
+.gen{display:grid;gap:10px}
+.gcomps{display:grid;gap:10px}
+.gcomp{display:grid;gap:8px;background:var(--paper);border:1.6px solid var(--line);border-radius:12px;padding:10px}
+.gcomp .top{display:grid;grid-template-columns:44px minmax(0,1fr) 78px auto;gap:8px;align-items:end}
+.gcomp .top .thumb{width:44px;height:44px}
+.gcomp .x{background:none;border:0;color:var(--muted);font:700 13px var(--body);cursor:pointer;text-decoration:underline;padding:0 0 12px}
+.gcomp select,.gcomp input{padding:8px 10px;font-size:15px}
+.vchips{display:flex;gap:6px;flex-wrap:wrap}
+.vchip{display:inline-flex;align-items:center;gap:6px;font:700 13px var(--body);background:var(--card);color:var(--ink);border:1.6px solid var(--line);border-radius:999px;padding:4px 11px 4px 5px;cursor:pointer}
+.vchip i{width:16px;height:16px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(21,32,24,.25)}
+.vchip[aria-pressed=false]{background:transparent;color:var(--muted);border-style:dashed;text-decoration:line-through}
+.gsum{background:var(--lime-soft);border:2px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14px;font-weight:600;display:grid;gap:2px}
+.gsum b{font-family:var(--display);font-size:22px;text-transform:uppercase;line-height:1}
+.gsum.bad{background:#fde3e2}
+@media (max-width:749px){.gcomp .top{grid-template-columns:minmax(0,1fr) 70px auto}.gcomp .top .thumb{display:none}}
 </style>
 </head><body>
 
@@ -193,7 +210,7 @@ footer{font-size:13px;color:var(--muted)}
   <header>
     <a class="back" href="../">← Herramientas</a>
     <h1>Variantes al <span>producto</span></h1>
-    <p class="lead">Sube el export de productos de Shopify y el xlsx con las combinaciones. Elige el producto, mira cómo quedarían las variantes y descarga un CSV listo para importar con solo ese producto. Si el producto es un bundle, también sale el CSV para asociar en Simple Bundles qué lleva cada variante. Nada se envía a Shopify desde aquí.</p>
+    <p class="lead">Sube el export de productos de Shopify y elige el combo. Dile qué productos lleva y cuántas unidades, y la herramienta arma sola todas las combinaciones de sabores (o, si ya las tienes, sube el xlsx). Mira cómo quedarían las variantes y descarga un CSV listo para importar con solo ese producto. Si el producto es un bundle, también sale el CSV para asociar en Simple Bundles qué lleva cada variante. Nada se envía a Shopify desde aquí.</p>
   </header>
 
   <div class="pair">
@@ -216,9 +233,21 @@ footer{font-size:13px;color:var(--muted)}
     <section class="card" aria-labelledby="t-xl">
       <span class="eyebrow">Paso 2</span>
       <h2 id="t-xl">Combinaciones</h2>
-      <label class="drop" id="xl-drop"><b>Subir xlsx</b><small id="xl-name">Una fila por combinación, columnas Tarro 1, Tarro 2…</small><input type="file" id="xl-file" accept=".xlsx,.xls,.csv"></label>
+      <div class="seg" role="group" aria-label="De dónde salen las combinaciones" id="mode-seg">
+        <button type="button" data-mode="gen" aria-pressed="true">Armarlas aquí</button>
+        <button type="button" data-mode="xl" aria-pressed="false">Subir xlsx</button>
+      </div>
+      <div id="gen-box" class="gen">
+        <p class="hint" id="gen-info">Primero sube el export y elige el combo en el paso 1.</p>
+        <div class="gcomps" id="gen-comps"></div>
+        <button type="button" class="mini" id="gen-add" hidden>+ Agregar producto</button>
+        <div class="gsum" id="gen-sum" hidden></div>
+      </div>
+      <div id="xl-box" hidden>
+        <label class="drop" id="xl-drop"><b>Subir xlsx</b><small id="xl-name">Una fila por combinación, columnas Tarro 1, Tarro 2…</small><input type="file" id="xl-file" accept=".xlsx,.xls,.csv"></label>
+        <p class="hint" id="xl-info" style="margin-top:10px">Las columnas que digan "Tarro" o "Sabor" se juntan en una sola opción (Shopify permite máximo 3 opciones). Las demás columnas que cambian son otra opción; las que siempre tienen el mismo valor se ignoran.</p>
+      </div>
       <div class="cols" id="cols"></div>
-      <p class="hint" id="xl-info">Las columnas que digan "Tarro" o "Sabor" se juntan en una sola opción (Shopify permite máximo 3 opciones). Las demás columnas que cambian son otra opción; las que siempre tienen el mismo valor se ignoran.</p>
     </section>
   </div>
 
@@ -260,7 +289,7 @@ footer{font-size:13px;color:var(--muted)}
 
   <section class="summary" aria-live="polite">
     <h2>Así va a quedar</h2>
-    <span class="status wait" id="status">Faltan archivos</span>
+    <span class="status wait" id="status">Falta algo</span>
     <p id="sum">Sube los dos archivos para ver las variantes.</p>
     <ul class="msgs" id="msgs"></ul>
     <div class="table" id="table" hidden></div>
@@ -365,6 +394,10 @@ footer{font-size:13px;color:var(--muted)}
       p.status=(r[idx.Status]||'').toLowerCase()||'active';
       p.vars=p.rows.filter(function(x){return x[idx['Option1 Value']];}).length;
       p.price=r[idx['Variant Price']]||''; p.opt=r[idx['Option1 Value']]||'';
+      /* Valores de sus variantes (sabores, colores…) para armar combinaciones */
+      p.values=p.rows.filter(function(x){return x[idx['Option1 Value']];}).map(function(x){ return [1,2,3].map(function(o){return idx['Option'+o+' Value']!=null?x[idx['Option'+o+' Value']]:'';}).filter(Boolean).join(' / '); });
+      if(p.values.length===1&&p.values[0]==='Default Title') p.values=[];
+      p.optName=r[idx['Option1 Name']]||'';
       p.key=norm(p.title+' '+p.handle+' '+p.skus.join(' ')); });
     products.sort(function(a,b){return (a.title||a.handle).localeCompare(b.title||b.handle,'es');});
     exp={head:h,idx:idx,products:products};
@@ -373,7 +406,7 @@ footer{font-size:13px;color:var(--muted)}
     $('exp-info').className='hint';
     if(products.length===1){ pick(products[0]); }
     else { $('exp-info').textContent='Busca o filtra y toca el producto al que van las variantes.'; renderChips(); renderList(); $('picker').hidden=false; $('picked').hidden=true; $('q').focus(); }
-    build();
+    refreshGen();
   }); });
 
   function renderChips(){
@@ -399,7 +432,7 @@ footer{font-size:13px;color:var(--muted)}
       mid.appendChild(el('small',null,(p.vars===1&&p.opt==='Default Title'?'Sin variantes':p.vars+(p.vars===1?' variante':' variantes'))+' · '+fmtMoney(p.price)+' · '+p.handle));
       b.appendChild(mid);
       b.appendChild(el('span','st '+p.status,STATUS[p.status]||p.status));
-      b.addEventListener('click',function(){ pick(p); build(); });
+      b.addEventListener('click',function(){ pick(p); refreshGen(); });
       box.appendChild(b); });
   }
   function thumb(p){ if(p.img){ var i=el('img','thumb'); i.src=p.img; i.alt=''; i.loading='lazy'; return i; } return el('div','thumb none','Sin foto'); }
@@ -418,9 +451,10 @@ footer{font-size:13px;color:var(--muted)}
     var box=$('picked'); box.innerHTML=''; box.appendChild(thumb(p));
     var d=el('div'); d.appendChild(el('b',null,p.title||p.handle));
     d.appendChild(el('small',null,(STATUS[p.status]||p.status)+' · hoy tiene '+(p.vars===1&&p.opt==='Default Title'?'sin variantes':p.vars+(p.vars===1?' variante':' variantes')+' ('+p.opt+')')+' · '+fmtMoney(p.price)));
-    if(exp.products.length>1){ var c=el('button',null,'Cambiar producto'); c.type='button'; c.addEventListener('click',function(){ picked=null; $('picked').hidden=true; $('picker').hidden=false; renderList(); $('q').focus(); build(); }); d.appendChild(c); }
+    if(exp.products.length>1){ var c=el('button',null,'Cambiar producto'); c.type='button'; c.addEventListener('click',function(){ picked=null; $('picked').hidden=true; $('picker').hidden=false; renderList(); $('q').focus(); refreshGen(); }); d.appendChild(c); }
     box.appendChild(d); box.hidden=false; $('picker').hidden=true;
     $('exp-info').textContent=exp.products.length===1?'Un solo producto en el export: ya quedó elegido.':'';
+    gen.comps=suggestGen(p); gen.sig=null;
   }
 
   /* Paso 2: xlsx */
@@ -444,22 +478,145 @@ footer{font-size:13px;color:var(--muted)}
       else kind='const';
       return {name:name,c:c,kind:kind,uniq:uniq};
     }).filter(function(x){return x.kind!=='empty';});
-    xl={cols:cols,data:data};
-    var box=$('cols'); box.innerHTML='';
-    cols.forEach(function(x){ box.appendChild(el('span','tag '+(x.kind==='flavor'?'flavor':x.kind==='opt'?'opt':'skip'),
-      x.name+(x.kind==='flavor'?' · sabor':x.kind==='opt'?' · opción':x.kind==='const'?' · siempre '+(x.uniq[0]||'vacío'):' · se ignora'))); });
+    xlFile={cols:cols,data:data};
     $('xl-drop').classList.add('ok'); $('xl-name').textContent=f.name+' · '+data.length+' filas';
     $('xl-info').className='hint'; $('xl-info').textContent='Verde: se juntan como sabores. Rosado: opción aparte. Punteado: no se usa.';
-    var flav=cols.filter(function(x){return x.kind==='flavor';}).length, opts=cols.filter(function(x){return x.kind==='opt';});
-    $('opt-names').innerHTML='';
-    addName('Opción 1 (sabores)', 'Sabor');
+    setCombos(xlFile); build();
+  },true); });
+  /* Usa unas combinaciones (del xlsx o armadas aquí): etiquetas de columnas y nombres de opciones */
+  var COLORS=/crema|cream|cereza|vino|negro|black|blanco|white|rojo|red|rosa|pink|fucsia|verde|green|lima|azul|blue|amarillo|yellow|naranja|orange|morado|lila|purple|gris|gray|grey|beige|arena|caf|marr|brown/i;
+  function setCombos(c){
+    xl=c; comps=null; sel=[]; picks=[];
+    var box=$('cols'); box.innerHTML=''; $('opt-names').innerHTML='';
+    if(!c) return;
+    var cols=c.cols;
+    cols.forEach(function(x){ box.appendChild(el('span','tag '+(x.kind==='flavor'?'flavor':x.kind==='opt'?'opt':'skip'),
+      x.name+(x.kind==='flavor'?' · sabor':x.kind==='opt'?' · opción':x.kind==='const'?' · siempre '+(x.uniq[0]||(c.gen?'igual':'vacío')):' · se ignora'))); });
+    var flav=cols.filter(function(x){return x.kind==='flavor';}), opts=cols.filter(function(x){return x.kind==='opt';});
+    var fv=[]; flav.forEach(function(x){ fv=fv.concat(x.uniq); });
+    addName('Opción 1 (sabores)', fv.length&&fv.every(function(v){return !v||(COLORS.test(v)&&!saborInfo(v).m);})?'Color':'Sabor');
     opts.forEach(function(x,n){
       /* Si los valores son colores (Crema, Cereza, Beige…), la opción se llama "Color…" para que el tema los pinte como círculos */
-      var isCol=x.uniq.every(function(v){ return !v||/crema|cream|cereza|vino|negro|black|blanco|white|rojo|red|rosa|pink|fucsia|verde|green|lima|azul|blue|amarillo|yellow|naranja|orange|morado|lila|purple|gris|gray|grey|beige|arena|caf|marr|brown/i.test(v); });
+      var isCol=x.uniq.every(function(v){ return !v||COLORS.test(v); });
       var nm=/color|colour|tono/i.test(x.name)?x.name:(isCol?'Color'+(/shaker/i.test(x.name)?' del shaker':''):x.name);
       addName('Opción '+(n+2)+' ('+x.name+')', nm); });
-    sel=[]; picks=[]; build();
-  },true); });
+  }
+
+  /* Paso 2 (modo "Armarlas aquí"): productos que lleva el combo -> todas las combinaciones */
+  var mode='gen', xlFile=null, gen={comps:[],sig:null};
+  function shortTitle(t){ return String(t||'').replace(/\s+[—–]\s.*$/,'').replace(/\s+-\s+\d+\s*porciones.*$/i,'').replace(/\s+\d+\s*(g|gr|ml)\b.*$/i,'').trim(); }
+  function prodBy(h){ return exp?exp.products.filter(function(p){return p.handle===h;})[0]:null; }
+  /* Del nombre del combo ("Combo 2 unidad Jugo verde polvo RUUTS + 2 unidad GOGO RUUTS - 120 porciones") saca qué lleva y cuántas */
+  function suggestGen(combo){
+    if(!exp||!combo) return [];
+    var cands=exp.products.filter(function(p){ return p!==combo&&!/^combo|kit|pack/i.test(p.title||p.handle); });
+    var t=String(combo.title||'').replace(/^\s*(combo|kit|pack)\s*/i,'').replace(/\s+[-—–]\s+\d+\s*porciones.*$/i,'');
+    var list=[], used={}, each=false;
+    t.split(/\s*\+\s*/).forEach(function(seg){
+      var m=seg.match(/^\s*(\d+)\s*(?:unidades?|uds?\.?|x)?\s+(.*)$/i), qty=m?parseInt(m[1],10):1, nm=m?m[2]:seg;
+      var ws=words(nm), best=null, bs=0;
+      cands.forEach(function(p){ var pw=words(p.title||p.handle), sc=0; ws.forEach(function(w){ if(pw.some(function(x){return x.indexOf(w)===0||w.indexOf(x)===0;})) sc++; });
+        if(sc>bs||(sc===bs&&sc&&best&&p.status==='active'&&best.status!=='active')){ bs=sc; best=p; } });
+      if(!best||used[best.handle]) return; used[best.handle]=1;
+      list.push(newComp(best,qty,!each)); if(list[list.length-1].mode==='each') each=true; });
+    return list;
+  }
+  function newComp(p,qty,canEach){
+    var c={h:p.handle,qty:qty,mode:'fixed',fix:p.values[0]||'',off:{}};
+    if(p.values.length>1) c.mode=canEach&&qty>1?'each':'one';
+    return c;
+  }
+  function binom(n,k){ var r=1; for(var i=1;i<=k;i++){ r=r*(n-k+i)/i; } return Math.round(r); }
+  function multisets(n,k){ var out=[]; (function rec(s,acc){ if(acc.length===k){ out.push(acc.slice()); return; } for(var i=s;i<n;i++){ acc.push(i); rec(i,acc); acc.pop(); } })(0,[]); return out; }
+  function incl(c,p){ return p.values.filter(function(v){return !c.off[v];}); }
+
+  /* Convierte lo elegido en las mismas columnas que tendría el xlsx */
+  function genCombos(){
+    var cols=[], parts=[], n=0, info={count:1,errs:[],lines:[]};
+    var eachC=gen.comps.filter(function(c){return c.mode==='each';});
+    if(eachC.length>1) info.errs.push('Solo un producto puede ir con «cada unidad la elige el cliente»: todas sus unidades se juntan en la opción Sabor.');
+    var firstVar=eachC[0]||gen.comps.filter(function(c){ var p=prodBy(c.h); return p&&c.mode==='one'&&incl(c,p).length>1; })[0];
+    gen.comps.forEach(function(c){ var p=prodBy(c.h); if(!p) return;
+      var nm=shortTitle(p.title||p.handle), vals=incl(c,p);
+      if(c.mode==='fixed'||vals.length<2){ var v=c.mode==='fixed'?c.fix:(vals[0]||''); info.lines.push(c.qty+' × '+nm+(v?' '+v:'')+' · siempre igual');
+        cols.push({name:nm,c:n++,kind:'const',uniq:[v]}); parts.push({k:'const',v:v}); return; }
+      if(c.mode==='each'&&c===firstVar){
+        var ms=multisets(vals.length,c.qty), cs=[]; for(var u=0;u<c.qty;u++) cs.push(n++);
+        cs.forEach(function(ci,u){ cols.push({name:(/jugo|tarro|polvo/i.test(nm)?'Tarro ':nm+' ')+(u+1),c:ci,kind:'flavor',uniq:vals}); });
+        parts.push({k:'each',cs:cs,rows:ms.map(function(m){return m.map(function(i){return vals[i];});})});
+        info.count*=ms.length; info.lines.push(c.qty+' × '+nm+' · '+vals.length+' sabores, el cliente elige cada uno → '+ms.length+' mezclas'); info.each=true; return; }
+      var ci=n++; cols.push({name:nm,c:ci,kind:c===firstVar?'flavor':'opt',uniq:vals});
+      parts.push({k:'one',c:ci,vals:vals}); info.count*=vals.length;
+      info.lines.push(c.qty+' × '+nm+' · el cliente elige '+(c.qty>1?'uno para las '+c.qty:'uno')+' de '+vals.length+' → ×'+vals.length); });
+    if(!gen.comps.length) info.errs.push('Agrega los productos que lleva el combo.');
+    else if(!cols.some(function(x){return x.kind==='flavor';})) info.errs.push('Ningún producto tiene variantes para elegir, así que no hay combinaciones: todo el combo sería una sola variante.');
+    if(info.count>2000){ info.errs.push('Saldrían '+info.count.toLocaleString('es-CO')+' combinaciones: demasiadas. Quita sabores o unidades.'); return {info:info,combos:null}; }
+    if(info.errs.length) return {info:info,combos:null};
+    var data=[[]];
+    parts.forEach(function(pt){ var next=[];
+      data.forEach(function(r){
+        if(pt.k==='const') next.push(r.slice());
+        else if(pt.k==='each') pt.rows.forEach(function(m){ var x=r.slice(); pt.cs.forEach(function(ci,u){ x[ci]=m[u]; }); next.push(x); });
+        else pt.vals.forEach(function(v){ var x=r.slice(); x[pt.c]=v; next.push(x); }); });
+      data=next; });
+    cols.forEach(function(x){ if(x.kind==='const') data.forEach(function(r){ r[x.c]=x.uniq[0]; }); });
+    data.forEach(function(r){ r.length=cols.length; });
+    return {info:info,combos:{cols:cols,data:data,gen:true}};
+  }
+
+  function renderGen(){
+    var box=$('gen-comps'), sum=$('gen-sum'), info=$('gen-info'); box.innerHTML=''; sum.hidden=true; sum.innerHTML='';
+    $('gen-add').hidden=!(exp&&picked);
+    if(!exp||!picked){ info.textContent='Primero sube el export y elige el combo en el paso 1. En el export tienen que venir también los productos que lleva el combo (exporta todos los productos).'; return null; }
+    info.textContent=gen.comps.length?'Qué lleva «'+shortTitle(picked.title)+'». Lo saqué del nombre del combo; corrígelo si hace falta.':'No reconocí los productos en el nombre del combo. Agrégalos con el botón.';
+    var opts=exp.products.filter(function(p){return p!==picked;});
+    gen.comps.forEach(function(c,i){ var p=prodBy(c.h), d=el('div','gcomp'), top=el('div','top');
+      top.appendChild(p?thumb(p):el('div','thumb none','—'));
+      var f1=el('div','field'), l1=el('label',null,'Producto'), s1=el('select'); l1.htmlFor=s1.id='gp'+i;
+      opts.forEach(function(x){ var o=el('option',null,(x.title||x.handle)+(x.values.length>1?' ('+x.values.length+' variantes)':'')+(x.status!=='active'?' · '+(STATUS[x.status]||x.status):'')); o.value=x.handle; s1.appendChild(o); }); s1.value=c.h;
+      s1.addEventListener('change',function(){ var np=prodBy(this.value), others=gen.comps.some(function(o){return o!==c&&o.mode==='each';}); gen.comps[i]=newComp(np,c.qty,!others); refreshGen(); });
+      f1.appendChild(l1); f1.appendChild(s1); top.appendChild(f1);
+      var f2=el('div','field'), l2=el('label',null,'Unidades'), q=el('input'); q.type='number'; q.min='1'; q.max='12'; q.step='1'; q.value=c.qty; l2.htmlFor=q.id='gq'+i;
+      q.addEventListener('change',function(){ c.qty=Math.min(12,Math.max(1,parseInt(this.value,10)||1)); if(c.qty===1&&c.mode==='each') c.mode='one'; refreshGen(); });
+      f2.appendChild(l2); f2.appendChild(q); top.appendChild(f2);
+      var x=el('button','x','Quitar'); x.type='button'; x.addEventListener('click',function(){ gen.comps.splice(i,1); refreshGen(); }); top.appendChild(x);
+      d.appendChild(top);
+      if(p&&p.values.length>1){
+        var f3=el('div','field'), l3=el('label',null,'¿Quién elige la variante?'), s3=el('select'); l3.htmlFor=s3.id='gm'+i;
+        var oth=gen.comps.some(function(o){return o!==c&&o.mode==='each';});
+        if(c.qty>1&&!oth){ var oe=el('option',null,'El cliente elige cada unidad (ej. un sabor por tarro)'); oe.value='each'; s3.appendChild(oe); }
+        var oo=el('option',null,c.qty>1?'El cliente elige una para las '+c.qty+' unidades':'El cliente la elige'); oo.value='one'; s3.appendChild(oo);
+        p.values.forEach(function(v){ var of=el('option',null,'Siempre '+v); of.value='fix:'+v; s3.appendChild(of); });
+        s3.value=c.mode==='fixed'?'fix:'+c.fix:c.mode;
+        s3.addEventListener('change',function(){ var v=this.value; if(v.indexOf('fix:')===0){ c.mode='fixed'; c.fix=v.slice(4); } else c.mode=v; refreshGen(); });
+        f3.appendChild(l3); f3.appendChild(s3); d.appendChild(f3);
+        if(c.mode!=='fixed'){ var ch=el('div','vchips'); ch.setAttribute('role','group'); ch.setAttribute('aria-label','Variantes que entran');
+          p.values.forEach(function(v){ var b=el('button','vchip'); b.type='button'; b.setAttribute('aria-pressed',String(!c.off[v])); var dot=el('i'); var si=saborInfo(v); dot.style.background=si.m?si.c:colorInfo(v); b.appendChild(dot); b.appendChild(document.createTextNode(v));
+            b.title=c.off[v]?'No entra: toca para incluirla':'Entra: toca para quitarla (ej. si está agotada)';
+            b.addEventListener('click',function(){ c.off[v]=!c.off[v]; refreshGen(); }); ch.appendChild(b); });
+          d.appendChild(ch); }
+      } else if(p) d.appendChild(el('small','hint','Sin variantes: siempre va igual.'));
+      box.appendChild(d); });
+    var g=genCombos(); sum.hidden=false; sum.className='gsum'+(g.combos?'':' bad');
+    if(g.combos){ sum.appendChild(el('b',null,g.info.count+(g.info.count===1?' variante':' variantes'))); g.info.lines.forEach(function(l){ sum.appendChild(el('span',null,l)); });
+      if(g.info.each) sum.appendChild(el('span',null,'El orden de los tarros no importa: «Lychee + Fruit Punch» y «Fruit Punch + Lychee» son la misma variante.')); }
+    else g.info.errs.forEach(function(e){ sum.appendChild(el('span',null,e)); });
+    return g.combos;
+  }
+  /* Vuelve a armar las combinaciones; solo reinicia nombres y bundle si de verdad cambiaron */
+  function refreshGen(){
+    if(mode!=='gen'){ build(); return; }
+    var c=renderGen(), s=c?JSON.stringify([c.cols,c.data]):'';
+    if(s!==gen.sig){ gen.sig=s; setCombos(c); }
+    build();
+  }
+  $('gen-add').addEventListener('click',function(){ var p=exp.products.filter(function(x){ return x!==picked&&!gen.comps.some(function(c){return c.h===x.handle;}); })[0]||exp.products[0];
+    gen.comps.push(newComp(p,1,!gen.comps.some(function(c){return c.mode==='each';}))); refreshGen(); });
+  [].forEach.call(document.querySelectorAll('#mode-seg button'),function(b){ b.addEventListener('click',function(){
+    mode=b.getAttribute('data-mode');
+    [].forEach.call(document.querySelectorAll('#mode-seg button'),function(x){ x.setAttribute('aria-pressed',String(x===b)); });
+    $('gen-box').hidden=mode!=='gen'; $('xl-box').hidden=mode!=='xl';
+    if(mode==='xl'){ gen.sig=null; setCombos(xlFile); build(); } else refreshGen(); }); });
   function addName(lbl,val){ var d=el('div','field'), id='on'+$('opt-names').children.length;
     var l=el('label',null,lbl); l.htmlFor=id; var i=el('input'); i.type='text'; i.id=id; i.value=val;
     d.appendChild(l); d.appendChild(i); $('opt-names').appendChild(d); }
@@ -471,7 +628,7 @@ footer{font-size:13px;color:var(--muted)}
     var p=picked, msgs=[], st=$('status');
     $('set-card').classList.toggle('off',!(p&&xl)); $('prev-card').classList.toggle('off',!(p&&xl)); $('bn-card').classList.toggle('off',!(p&&xl));
     out=null; variants=[]; $('dl').disabled=true; $('table').hidden=true; $('msgs').innerHTML='';
-    if(!p||!xl){ st.className='status wait'; st.textContent='Faltan archivos'; $('sum').textContent=!exp?'Sube el export de productos.':!p?'Elige el producto.':'Sube el xlsx de combinaciones.'; renderPreview(); buildBundle(); return; }
+    if(!p||!xl){ st.className='status wait'; st.textContent='Falta algo'; $('sum').textContent=!exp?'Sube el export de productos.':!p?'Elige el producto.':(mode==='gen'?'Arma las combinaciones en el paso 2.':'Sube el xlsx de combinaciones.'); renderPreview(); buildBundle(); return; }
     var flav=xl.cols.filter(function(x){return x.kind==='flavor';}), opts=xl.cols.filter(function(x){return x.kind==='opt';});
     names=[].map.call($('opt-names').querySelectorAll('input'),function(i){return i.value.trim();});
     var order=[]; xl.data.forEach(function(r){ flav.forEach(function(x){ var v=txt(r[x.c]); if(v){ v=canon(v); if(order.indexOf(v)<0) order.push(v); } }); });
@@ -525,7 +682,7 @@ footer{font-size:13px;color:var(--muted)}
       if(I['Variant Compare At Price']!=null) r[I['Variant Compare At Price']]=cmp;
       rows.push(r);
     });
-    p.rows.slice(1).forEach(function(r){ if(!r[I['Option1 Value']]&&r[I['Image Src']]){
+    p.rows.slice(1).forEach(function(r){ if(r[I['Image Src']]){
       rows.push(H.map(function(k,c){ return k==='Handle'||/^Image /.test(k)?r[c]:''; })); } });
     out={rows:rows,name:'shopify-'+p.handle+'.csv'};
     $('dl').disabled=false;
@@ -698,6 +855,19 @@ footer{font-size:13px;color:var(--muted)}
       else { for(var o=1;o<names.length;o++){ var vals=valuesOf(o), mm=autoMap(pr,vals,false); if(vals.length>1&&vals.filter(function(v){return mm[v];}).length===vals.length){ c.mode=o; c.qty=1; c.map=mm; break; } } }
       list.push(c); });
     return list; }
+  /* Si las combinaciones se armaron aquí, ya sabemos qué lleva el bundle: se busca cada producto por su nombre en el export de la app */
+  function genBundle(){
+    var list=[], opt=0, ci=0;
+    gen.comps.forEach(function(c){ var p=prodBy(c.h); if(!p) return; var t=norm(p.title||p.handle);
+      var pr=bn.plist.filter(function(x){return norm(x.title)===t;})[0]||guessProduct(shortTitle(p.title)); if(!pr) return;
+      var kind=null; xl.cols.forEach(function(x){ if(x.c===ci) kind=x.kind; });
+      var span=c.mode==='each'&&kind==='flavor'?c.qty:1; ci+=span;
+      if(kind==='flavor'){ var vals=flavorsUsed(); list.push({pid:pr.pid,mode:0,vid:pr.items[0].vid,qty:c.mode==='each'?1:c.qty,map:autoMap(pr,vals,true)}); return; }
+      if(kind==='opt'){ opt++; list.push({pid:pr.pid,mode:opt,vid:pr.items[0].vid,qty:c.qty,map:autoMap(pr,valuesOf(opt),false)}); return; }
+      var v=c.mode==='fixed'?c.fix:(incl(c,p)[0]||''), it=pr.items.filter(function(i){ return norm(i.vtitle)===norm(v)||saborInfo(i.vtitle).m&&saborInfo(i.vtitle).n===saborInfo(v).n; })[0]||pr.items[0];
+      list.push({pid:pr.pid,mode:'fixed',vid:it.vid,qty:c.qty,map:{}}); });
+    return list.length?list:null;
+  }
   function sigKey(t){ var c={}; String(t).split(/\s+[-+]\s+/).forEach(function(q){ var m=q.match(/^\s*(\d+)\s+/), f=saborInfo(q).n; c[f]=(c[f]||0)+(m?parseInt(m[1],10):1); }); return Object.keys(c).sort().map(function(f){return c[f]+'·'+f;}).join('|'); }
 
   function buildBundle(){
@@ -711,7 +881,7 @@ footer{font-size:13px;color:var(--muted)}
     var B=chosenBundle(); sel2.value=B?B.pid:''; $('bn-prod-f').hidden=!!B&&norm(B.title)===norm(picked.title||'');
     if(!B){ $('bn-info').className='hint bad'; $('bn-info').textContent='En este export no hay un bundle que se llame «'+(picked.title||picked.handle)+'». Si ya importaste el CSV 1 y el producto está en la app, elígelo arriba; si no, impórtalo primero y vuelve a exportar.'; hint.textContent='Falta elegir el bundle.'; return; }
     $('bn-info').className='hint'; $('bn-info').textContent='Bundle «'+B.title+'» con '+B.vars.length+' variantes en la app. Abajo, qué lleva cada una:';
-    if(!comps) comps=suggestComps();
+    if(!comps) comps=(xl.gen&&genBundle())||suggestComps();
     if(!comps.length) comps.push({pid:bn.plist[0]?bn.plist[0].pid:'',mode:'fixed',vid:bn.plist[0]?bn.plist[0].items[0].vid:'',qty:1,map:{}});
 
     /* Filas de componentes */
